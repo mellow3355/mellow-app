@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mellow — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --wine:#3d1a24;--wine-d:#2a1018;--wine-m:#5c2535;
+  --blue:#2d3fe0;--blue-l:#e8ecff;
+  --green:#1a7a3c;--green-l:#e8f8ee;
+  --red:#c0392b;--red-l:#fdecea;
+  --yellow:#b8860b;--yellow-l:#fff8e1;
+  --orange:#c75000;--orange-l:#fff0e6;
+  --bg:#f0f2f7;--white:#fff;
+  --gray:#f5f6fa;--gray2:#e4e6ef;--gray3:#b0b8d0;
+  --text:#1a1d2e;--sub:#6b7280;
+  --r:12px;--shadow:0 2px 16px rgba(0,0,0,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* LOGIN */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--wine-d);padding:20px;}
+.login-card{background:#fff;border-radius:20px;padding:40px 32px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:loginIn .5s cubic-bezier(.22,1,.36,1) both;}
+@keyframes loginIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo img{height:64px;object-fit:contain;}
+.login-logo h1{font-size:1.5rem;font-weight:700;color:var(--wine-d);margin-top:10px;}
+.login-logo p{font-size:.8rem;color:var(--sub);margin-top:4px;}
+.lfield{margin-bottom:14px;}
+.lfield label{display:block;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:6px;}
+.lfield input{width:100%;padding:12px 14px;border:1.5px solid var(--gray2);border-radius:10px;font-family:'Outfit',sans-serif;font-size:.92rem;color:var(--text);outline:none;transition:border .2s;}
+.lfield input:focus{border-color:var(--wine-d);}
+.login-btn{width:100%;padding:14px;background:var(--wine-d);color:#fff;border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:8px;}
+.login-btn:hover{background:var(--wine-m);}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;}
+.login-err{font-size:.78rem;color:#c0392b;text-align:center;margin-top:10px;display:none;}
+.demo-box{margin-top:18px;background:var(--gray);border-radius:10px;padding:12px;font-size:.74rem;color:var(--sub);line-height:1.8;}
+
+/* APP */
+#app{display:none;min-height:100vh;flex-direction:row;}
+#app.visible{display:flex;}
+.sidebar{width:230px;flex-shrink:0;display:flex;flex-direction:column;min-height:100vh;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sidebar-logo{padding:20px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;}
+.sidebar-logo img{width:36px;height:36px;border-radius:50%;object-fit:contain;}
+.sl-name{font-size:1rem;font-weight:700;color:#fff;}
+.sl-badge{font-size:.62rem;padding:2px 8px;border-radius:100px;color:#fff;font-weight:700;margin-top:3px;display:inline-block;}
+.sidebar-nav{padding:10px 0;flex:1;}
+.nav-group{padding:10px 18px 4px;font-size:.58rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.25);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;margin:1px 8px;border-radius:8px;font-size:.85rem;font-weight:500;color:rgba(255,255,255,.6);transition:all .2s;cursor:pointer;}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff;}
+.nav-item.active{background:rgba(255,255,255,.15);color:#fff;}
+.nav-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+.nav-badge{margin-left:auto;background:#e74c3c;color:#fff;font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:100px;min-width:20px;text-align:center;}
+.sidebar-bottom{padding:14px;border-top:1px solid rgba(255,255,255,.08);}
+.user-card{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;}
+.u-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:#fff;font-weight:700;flex-shrink:0;}
+.u-name{font-size:.8rem;color:#fff;font-weight:600;}
+.u-role{font-size:.65rem;color:rgba(255,255,255,.5);}
+.logout-link{font-size:.65rem;color:rgba(255,255,255,.4);cursor:pointer;margin-top:2px;}
+.logout-link:hover{color:rgba(255,255,255,.8);}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{background:#fff;border-bottom:1px solid var(--gray2);padding:0 22px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.topbar-title{font-size:1.05rem;font-weight:700;}
+.sede-tag{font-size:.72rem;font-weight:700;padding:4px 12px;border-radius:100px;color:#fff;}
+.tasa-pill{background:var(--yellow-l);border:1px solid #e0c060;color:var(--yellow);font-size:.78rem;font-weight:700;padding:5px 12px;border-radius:100px;cursor:pointer;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#1a7a3c;display:inline-block;animation:lpulse 1.5s ease-in-out infinite;}
+@keyframes lpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.6)}}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+
+.content{padding:22px;flex:1;}
+.page{display:none;}
+.page.active{display:block;animation:pIn .25s ease both;}
+@keyframes pIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* BUTTONS */
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;}
+.btn-wine{background:var(--wine-d);color:#fff;} .btn-wine:hover{background:var(--wine-m);}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-outline{background:transparent;border:1.5px solid var(--gray2);color:var(--sub);} .btn-outline:hover{border-color:var(--blue);color:var(--blue);}
+.btn-sm{padding:6px 12px;font-size:.75rem;} .btn-xs{padding:4px 10px;font-size:.72rem;border-radius:6px;}
+.btn-green-soft{background:var(--green-l);color:var(--green);border:none;}
+.btn-orange-soft{background:var(--orange-l);color:var(--orange);border:none;}
+.btn-red-soft{background:var(--red-l);color:var(--red);border:none;}
+.btn-blue-soft{background:var(--blue-l);color:var(--blue);border:none;}
+
+/* LAYOUT */
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.page-header h1{font-size:1.4rem;font-weight:700;}
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px;}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--gray2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.card-title{font-size:.92rem;font-weight:700;}
+.card-body{padding:18px;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:18px;}
+.stat-card{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--shadow);}
+.stat-icon{font-size:1.4rem;margin-bottom:6px;}
+.stat-label{font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--sub);margin-bottom:3px;}
+.stat-value{font-size:1.5rem;font-weight:700;line-height:1;}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{padding:9px 13px;text-align:left;font-size:.67rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);border-bottom:1px solid var(--gray2);white-space:nowrap;}
+td{padding:11px 13px;font-size:.83rem;border-bottom:1px solid var(--gray);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--gray);}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:100px;font-size:.72rem;font-weight:700;white-space:nowrap;}
+.b-new{background:#f3e8ff;color:#6b21a8;}
+.b-confirmed{background:var(--blue-l);color:var(--blue);}
+.b-transit{background:var(--orange-l);color:var(--orange);}
+.b-done{background:var(--green-l);color:var(--green);}
+.b-cancelled{background:var(--red-l);color:var(--red);}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--gray2);}
+.search-box{display:flex;align-items:center;gap:6px;background:var(--gray);border-radius:8px;padding:7px 11px;border:1.5px solid transparent;flex:1;min-width:160px;max-width:260px;}
+.search-box:focus-within{background:#fff;border-color:var(--blue);}
+.search-box input{border:none;background:transparent;font-family:'Outfit',sans-serif;font-size:.84rem;color:var(--text);outline:none;width:100%;}
+.ftabs{display:flex;gap:2px;background:var(--gray);border-radius:8px;padding:3px;flex-wrap:wrap;}
+.ftab{padding:5px 12px;border-radius:6px;border:none;background:transparent;font-family:'Outfit',sans-serif;font-size:.76rem;font-weight:500;color:var(--sub);cursor:pointer;transition:all .2s;}
+.ftab.active{background:#fff;color:var(--blue);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+
+/* FORM */
+.field{margin-bottom:14px;}
+label{display:block;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:6px;}
+input[type=text],input[type=number],input[type=time],input[type=tel],input[type=email],input[type=date],textarea,select{width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-family:'Outfit',sans-serif;font-size:.88rem;color:var(--text);outline:none;transition:border .2s;}
+input:focus,textarea:focus,select:focus{border-color:var(--blue);}
+textarea{min-height:70px;resize:vertical;}
+
+/* TOGGLE */
+.toggle{position:relative;width:42px;height:22px;flex-shrink:0;display:inline-block;}
+.toggle input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-sl{position:absolute;inset:0;background:var(--gray3);border-radius:100px;cursor:pointer;transition:.3s;}
+.toggle-sl::before{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle input:checked+.toggle-sl{background:var(--blue);}
+.toggle input:checked+.toggle-sl::before{transform:translateX(20px);}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-bg.open{display:flex;animation:ov .2s ease both;}
+@keyframes ov{from{opacity:0}to{opacity:1}}
+.modal-box{background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;animation:mIn .28s cubic-bezier(.22,1,.36,1) both;}
+@keyframes mIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-header{padding:18px 20px;border-bottom:1px solid var(--gray2);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:2;}
+.modal-title{font-size:1rem;font-weight:700;}
+.modal-close-btn{background:var(--gray);border:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem;}
+.modal-body{padding:20px;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--gray2);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:#fff;}
+
+/* ORDER STATUS STEPPER */
+.stepper{display:flex;align-items:center;margin:14px 0 18px;}
+.step-i{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;}
+.step-i:not(:last-child)::after{content:'';position:absolute;top:16px;left:60%;width:80%;height:2px;background:var(--gray2);z-index:0;}
+.step-i.done:not(:last-child)::after{background:var(--green);}
+.step-c{width:32px;height:32px;border-radius:50%;border:2px solid var(--gray2);background:#fff;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:var(--sub);z-index:1;position:relative;}
+.step-i.done .step-c{background:var(--green);border-color:var(--green);color:#fff;}
+.step-i.active .step-c{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 0 0 4px rgba(45,63,224,.15);}
+.step-l{font-size:.6rem;color:var(--sub);margin-top:4px;text-align:center;font-weight:500;}
+.step-i.done .step-l,.step-i.active .step-l{color:var(--text);font-weight:600;}
+
+/* ORDER DETAIL */
+.ods{margin-bottom:14px;}
+.ods-title{font-size:.67rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--sub);margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--gray2);}
+.ods-row{display:flex;justify-content:space-between;padding:4px 0;font-size:.84rem;}
+.ods-k{color:var(--sub);flex-shrink:0;margin-right:10px;}
+.ods-v{font-weight:600;text-align:right;}
+
+/* TIME BADGE */
+.time-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:.7rem;font-weight:700;white-space:nowrap;}
+.time-fresh{background:#e8f8ee;color:#1a7a3c;}
+.time-mid{background:#fff3cd;color:#856404;}
+.time-old{background:#fdecea;color:#c0392b;animation:pulse-red 1.5s ease-in-out infinite;}
+@keyframes pulse-red{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* VOUCHER */
+.voucher-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid var(--gray2);flex-shrink:0;}
+.voucher-thumb:hover{border-color:var(--blue);}
+.no-voucher{font-size:.73rem;color:var(--gray3);font-style:italic;}
+
+/* OWNER SWITCHER */
+.sede-switcher{display:none;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.ssw-btn{padding:6px 14px;border-radius:100px;border:1.5px solid var(--gray2);font-size:.78rem;font-weight:600;cursor:pointer;background:#fff;color:var(--sub);font-family:'Outfit',sans-serif;}
+.ssw-btn.active{color:#fff;font-weight:700;}
+
+/* STORE EDITOR */
+.product-editor-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--gray);position:relative;}
+.product-editor-item:last-child{border-bottom:none;}
+.pe-thumb{width:60px;height:60px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--gray2);cursor:pointer;border:2px solid var(--gray2);}
+.pe-thumb:hover{border-color:var(--blue);}
+.pe-info{flex:1;}
+.pe-name{font-size:.88rem;font-weight:600;color:var(--text);}
+.pe-cat{font-size:.72rem;color:var(--sub);}
+.pe-price{font-size:.82rem;font-weight:700;color:var(--wine-d);}
+.pe-drag{cursor:grab;color:var(--gray3);font-size:1.1rem;padding:4px;}
+.pe-actions{display:flex;gap:6px;align-items:center;}
+.banner-preview{width:100%;aspect-ratio:16/6;object-fit:cover;border-radius:10px;display:block;cursor:pointer;border:2px dashed var(--gray2);transition:border-color .2s;background:var(--gray);}
+.banner-preview:hover{border-color:var(--blue);}
+.banner-placeholder{width:100%;aspect-ratio:16/6;border-radius:10px;background:var(--gray);display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px dashed var(--gray2);flex-direction:column;gap:8px;color:var(--sub);font-size:.85rem;}
+
+/* ZONES */
+.zone-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--gray);border-radius:10px;margin-bottom:8px;}
+.zone-name-inp{flex:1;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-family:'Outfit',sans-serif;font-size:.85rem;outline:none;}
+.zone-name-inp:focus{border-color:var(--blue);}
+.zone-price-inp{width:80px;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:600;text-align:right;outline:none;}
+.zone-price-inp:focus{border-color:var(--blue);}
+
+/* HORARIOS */
+.sede-tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+.sede-tab{padding:7px 16px;border-radius:100px;border:1.5px solid var(--gray2);font-size:.82rem;font-weight:600;cursor:pointer;background:#fff;color:var(--sub);}
+.sede-tab.active{background:var(--wine-d);border-color:var(--wine-d);color:#fff;}
+.sched-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--gray);border-radius:10px;margin-bottom:8px;flex-wrap:wrap;}
+.day-nm{width:96px;font-size:.85rem;font-weight:600;flex-shrink:0;}
+.time-sm{width:95px;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-family:'Outfit',sans-serif;font-size:.83rem;background:#fff;outline:none;}
+.time-sm:focus{border-color:var(--blue);}
+
+/* TASA */
+.tasa-hero{background:linear-gradient(135deg,var(--wine-d),var(--wine-m));border-radius:var(--r);padding:24px;color:#fff;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.tasa-big{font-size:2.2rem;font-weight:700;}
+.tasa-inp{background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);border-radius:10px;padding:10px 14px;font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:700;color:#fff;width:150px;outline:none;text-align:right;}
+
+/* MOTO */
+.moto-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;margin-bottom:20px;}
+.moto-card-big{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:18px;text-align:center;}
+.moto-av{width:64px;height:64px;border-radius:50%;color:#fff;font-weight:700;font-size:1.5rem;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--text);color:#fff;padding:11px 18px;border-radius:10px;font-size:.84rem;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.2);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;max-width:320px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.toast-success{background:var(--green);}
+.toast.toast-error{background:var(--red);}
+
+/* FIREBASE STATUS */
+.fb-status{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:100px;}
+.fb-online{background:var(--green-l);color:var(--green);}
+.fb-offline{background:var(--red-l);color:var(--red);}
+.fb-loading{background:var(--yellow-l);color:var(--yellow);}
+
+/* LOADING SPINNER */
+.spinner{width:20px;height:20px;border:2px solid var(--gray2);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:768px){
+  .sidebar{width:56px;}
+  .sl-name,.u-name,.u-role,.nav-item span,.nav-group,.sidebar-bottom .u-name,.sidebar-bottom .u-role,.logout-link{display:none;}
+  .sidebar-logo{padding:14px;justify-content:center;}
+  .nav-item{padding:12px;margin:1px 4px;justify-content:center;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="https://ik.imagekit.io/d3ddbxom7/tr:,h-200/Negocios%2Fmellow%2FPagina%2Fpreview_business_logo_1769011680567" alt="Mellow"/>
+      <h1>mellow ®</h1>
+      <p>Panel de administración</p>
+    </div>
+    <div class="lfield">
+      <label>Correo electrónico</label>
+      <input type="email" id="loginEmail" placeholder="sede@mellow.com" autocomplete="email"/>
+    </div>
+    <div class="lfield">
+      <label>Contraseña</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Entrar →</button>
+    <div class="login-err" id="loginErr">Usuario o contraseña incorrectos</div>
+    <div class="demo-box">
+      <strong>Usuarios de demostración:</strong><br>
+      👑 owner@mellow.com · owner2025<br>
+      📍 caracas@mellow.com · ccs2025<br>
+      📍 barquisimeto@mellow.com · bqto2025<br>
+      📍 maracaibo@mellow.com · mcbo2025
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="https://ik.imagekit.io/d3ddbxom7/tr:,h-200/Negocios%2Fmellow%2FPagina%2Fpreview_business_logo_1769011680567" alt="Mellow"/>
+      <div>
+        <div class="sl-name">mellow ®</div>
+        <span class="sl-badge" id="sidebarBadge">—</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">Principal</div>
+      <div class="nav-item active" onclick="nav('dashboard')"><span class="nav-icon">🏠</span><span>Dashboard</span></div>
+      <div class="nav-item" onclick="nav('orders')"><span class="nav-icon">📦</span><span>Órdenes</span><span class="nav-badge" id="newBadge">0</span></div>
+      <div class="nav-group">Tienda</div>
+      <div class="nav-item" onclick="nav('store')"><span class="nav-icon">🎨</span><span>Editor de tienda</span></div>
+      <div class="nav-group">Operaciones</div>
+      <div class="nav-item" onclick="nav('motorizados')"><span class="nav-icon">🛵</span><span>Motorizados</span></div>
+      <div class="nav-item" onclick="nav('delivery')"><span class="nav-icon">📍</span><span>Zonas delivery</span></div>
+      <div class="nav-group">Configuración</div>
+      <div class="nav-item" onclick="nav('horarios')"><span class="nav-icon">🕐</span><span>Horarios</span></div>
+      <div class="nav-item" onclick="nav('tasa')"><span class="nav-icon">💱</span><span>Tasa del día</span></div>
+      <div class="nav-group">Negocio</div>
+      <div class="nav-item" onclick="nav('clients')"><span class="nav-icon">👥</span><span>Clientes</span></div>
+      <div class="nav-item owner-only" id="navAnalytics" onclick="nav('analytics')" style="display:none"><span class="nav-icon">📊</span><span>Analíticas globales</span></div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-card">
+        <div class="u-av" id="userAv">—</div>
+        <div>
+          <div class="u-name" id="userName">—</div>
+          <div class="u-role" id="userRole">—</div>
+          <div class="logout-link" onclick="doLogout()">Cerrar sesión →</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title" id="pageTitle">Dashboard</div>
+        <span class="sede-tag" id="topbarBadge">—</span>
+        <div class="tasa-pill" onclick="nav('tasa')" id="tasaPill">💱 —</div>
+        <span id="liveDot" style="display:none;align-items:center;gap:4px;font-size:.72rem;color:var(--sub)"><span class="live-dot"></span>en vivo</span>
+      </div>
+      <div class="topbar-right">
+        <span class="fb-status fb-loading" id="fbStatus">⏳ Conectando...</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- OWNER SWITCHER -->
+      <div class="sede-switcher" id="sedeSwitcher">
+        <span style="font-size:.8rem;font-weight:600;color:var(--sub);align-self:center;">Ver:</span>
+        <button class="ssw-btn active" id="sw-all" onclick="ownerSwitch('all',this)">🌐 Todas</button>
+        <button class="ssw-btn" id="sw-caracas" onclick="ownerSwitch('caracas',this)">📍 Caracas</button>
+        <button class="ssw-btn" id="sw-barquisimeto" onclick="ownerSwitch('barquisimeto',this)">📍 Barquisimeto</button>
+        <button class="ssw-btn" id="sw-maracaibo" onclick="ownerSwitch('maracaibo',this)">📍 Maracaibo</button>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-icon">🆕</div><div class="stat-label">Por confirmar</div><div class="stat-value" id="ds-new">—</div></div>
+          <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Confirmados</div><div class="stat-value" id="ds-conf">—</div></div>
+          <div class="stat-card"><div class="stat-icon">🛵</div><div class="stat-label">En camino</div><div class="stat-value" id="ds-transit">—</div></div>
+          <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Facturado hoy</div><div class="stat-value" id="ds-rev">$0</div></div>
+        </div>
+        <div id="bdAlert" style="display:none;background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:12px 16px;margin-bottom:16px;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:1.1rem;">🎂</span><span id="bdAlertText" style="font-size:.84rem;font-weight:700;color:#b8860b;"></span>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Últimas órdenes <span class="live-dot" style="margin-left:6px;"></span></div><button class="btn btn-outline btn-sm" onclick="nav('orders')">Ver todas →</button></div>
+          <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Sede</th><th>Cliente</th><th>Pedido</th><th>Entrega</th><th>Total</th><th>Estado</th><th>Tiempo</th></tr></thead><tbody id="dashTable"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--sub)">Cargando...</td></tr></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ORDERS -->
+      <div class="page" id="page-orders">
+        <div class="page-header"><h1>Órdenes</h1></div>
+        <div class="card">
+          <div class="toolbar">
+            <div class="ftabs" id="orderFtabs">
+              <button class="ftab active" onclick="setOF('all',this)">Todas</button>
+              <button class="ftab" onclick="setOF('new',this)">🆕 Por confirmar</button>
+              <button class="ftab" onclick="setOF('confirmed',this)">✅ Confirmado</button>
+              <button class="ftab" onclick="setOF('transit',this)">🛵 En camino</button>
+              <button class="ftab" onclick="setOF('done',this)">🏁 Finalizado</button>
+              <button class="ftab" onclick="setOF('cancelled',this)">❌ Cancelado</button>
+            </div>
+            <div class="search-box"><span>🔍</span><input type="text" id="orderSearch" placeholder="Buscar..." oninput="renderOrders()"/></div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Sede</th><th>Tiempo</th><th>Cliente</th><th>Teléfono</th><th>Pedido</th><th>Entrega</th><th>Total</th><th>Pago</th><th>Estado</th><th>Motorizado</th><th>Comprobante</th><th>Acciones</th></tr></thead>
+              <tbody id="ordersBody"><tr><td colspan="13" style="text-align:center;padding:24px;color:var(--sub)">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- STORE EDITOR -->
+      <div class="page" id="page-store">
+        <div class="page-header"><h1>Editor de tienda</h1></div>
+
+        <!-- Banner -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <div class="card-title">🖼️ Banner principal</div>
+            <button class="btn btn-wine btn-sm" onclick="document.getElementById('bannerInput').click()">📤 Subir banner</button>
+          </div>
+          <div class="card-body">
+            <div id="bannerContainer" style="cursor:pointer;" onclick="document.getElementById('bannerInput').click()">
+              <div class="banner-placeholder" id="bannerPlaceholder">
+                <span style="font-size:2rem;">🖼️</span>
+                <span>Toca para subir el banner de la tienda</span>
+                <span style="font-size:.75rem;color:var(--gray3);">Recomendado: 1200×400px · JPG o PNG</span>
+              </div>
+              <img id="bannerPreview" style="display:none;" class="banner-preview" alt="Banner"/>
+            </div>
+            <input type="file" id="bannerInput" accept="image/*" style="display:none" onchange="uploadBanner(this)"/>
+            <div id="bannerUploadProgress" style="display:none;margin-top:10px;">
+              <div style="background:var(--gray2);border-radius:100px;height:6px;overflow:hidden;">
+                <div id="bannerProgressBar" style="background:var(--blue);height:100%;width:0%;transition:width .3s;border-radius:100px;"></div>
+              </div>
+              <div style="font-size:.75rem;color:var(--sub);margin-top:4px;" id="bannerProgressText">Subiendo...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Products -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎂 Productos</div>
+            <button class="btn btn-wine btn-sm" onclick="openAddProduct()">+ Agregar producto</button>
+          </div>
+          <div class="card-body" style="padding:4px 16px;">
+            <div style="font-size:.75rem;color:var(--sub);padding:8px 0 10px;">Arrastra para cambiar el orden de los productos</div>
+            <div id="productEditorList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOTORIZADOS -->
+      <div class="page" id="page-motorizados">
+        <div class="page-header"><h1>Motorizados</h1><button class="btn btn-wine btn-sm" onclick="addMoto()">+ Agregar</button></div>
+        <div class="moto-grid" id="motoGrid"></div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📋 Historial de entregas</div></div>
+          <div class="tbl-wrap"><table><thead><tr><th>Motorizado</th><th>#Orden</th><th>Cliente</th><th>Dirección</th><th>Entrega</th><th>Estado</th></tr></thead><tbody id="motoHistBody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- DELIVERY ZONES -->
+      <div class="page" id="page-delivery">
+        <div class="page-header"><h1>Zonas de delivery</h1><button class="btn btn-wine btn-sm" onclick="saveZones()">💾 Guardar</button></div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-header"><div class="card-title" id="zonesCardTitle">Zonas</div><button class="btn btn-outline btn-sm" onclick="addZone()">+ Agregar zona</button></div>
+          <div class="card-body"><div id="zonesList"></div></div>
+        </div>
+        <div style="background:#e8ecff;border:1.5px solid #c0cbff;border-radius:var(--r);padding:14px;font-size:.82rem;color:#2d3fe0;line-height:1.75;">
+          <strong>ℹ️</strong> El costo de delivery se suma automáticamente al total cuando el cliente elige <strong>Delivery</strong>. Todas las zonas están en <strong>$3.00</strong> por ahora. Ajusta según la zona más adelante.
+        </div>
+      </div>
+
+      <!-- HORARIOS -->
+      <div class="page" id="page-horarios">
+        <div class="page-header"><h1>Horario de sede</h1></div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div><div style="font-size:.78rem;color:var(--sub);margin-bottom:5px;">Estado actual</div>
+              <span class="badge" id="sedeStatusBadge">—</span>
+              <span style="font-size:.78rem;color:var(--sub);margin-left:8px;" id="sedeNextTxt">—</span></div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:.84rem;font-weight:600;">Cerrar manualmente</span>
+              <label class="toggle"><input type="checkbox" id="manualClose" onchange="toggleManual()"/><span class="toggle-sl"></span></label>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title" id="schedTitle">Horario</div><button class="btn btn-wine btn-sm" onclick="saveSchedule()">💾 Guardar</button></div>
+          <div class="card-body"><div id="schedGrid"></div></div>
+        </div>
+        <div style="background:#e8ecff;border:1.5px solid #c0cbff;border-radius:var(--r);padding:14px;font-size:.82rem;color:#2d3fe0;line-height:1.75;">
+          <strong>ℹ️</strong> Sede <strong>abierta</strong> → cliente puede pedir inmediato o programar. Sede <strong>cerrada</strong> → solo pedidos programados para el futuro.
+        </div>
+      </div>
+
+      <!-- TASA -->
+      <div class="page" id="page-tasa">
+        <div class="page-header"><h1>Tasa del día</h1></div>
+        <div class="tasa-hero">
+          <div>
+            <div style="font-size:.75rem;opacity:.7;margin-bottom:4px;">Tasa actual (Bs. por $1 USD)</div>
+            <div class="tasa-big" id="tasaDisplay">— Bs.</div>
+            <div style="font-size:.72rem;opacity:.55;margin-top:4px;" id="tasaUpd">No establecida</div>
+          </div>
+          <div>
+            <div style="font-size:.75rem;font-weight:600;opacity:.7;margin-bottom:6px;">Actualizar</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input class="tasa-inp" type="number" id="tasaInp" placeholder="0.00" step="0.01"/>
+              <button onclick="saveTasa()" style="padding:10px 14px;background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4);border-radius:10px;font-family:Outfit,sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;">Guardar</button>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-header"><div class="card-title">🤖 Tasa BCV automática</div><button class="btn btn-blue btn-sm" onclick="fetchTasa()">🔄 Obtener tasa BCV</button></div>
+          <div class="card-body"><p style="font-size:.82rem;color:var(--sub);">La tasa se aplica automáticamente a <strong>Pago Móvil</strong> y <strong>Punto de Venta</strong>.</p><div id="fetchStatus" style="margin-top:10px;font-size:.82rem;"></div></div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-body">
+            <div style="font-weight:700;margin-bottom:12px;">🧮 Calculadora</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+              <span style="background:var(--blue-l);color:var(--blue);font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:6px;">USD</span>
+              <input id="calcUsd" type="number" placeholder="0.00" oninput="calcConv('usd')" style="flex:1;min-width:80px;padding:9px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-family:Outfit,sans-serif;outline:none;"/>
+              <span style="color:var(--sub);">→</span>
+              <div id="calcBsRes" style="background:var(--green-l);border:1.5px solid #a0d8b8;border-radius:8px;padding:9px 12px;font-weight:700;color:var(--green);flex:1;text-align:center;min-width:80px;">0.00 Bs.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📅 Historial</div></div>
+          <div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Tasa Bs./$</th><th>Fuente</th></tr></thead><tbody id="tasaHistBody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- CLIENTS -->
+      <div class="page" id="page-clients">
+        <div class="page-header"><h1>Clientes</h1><button class="btn btn-outline btn-sm" onclick="exportClients()">⬇ Exportar CSV</button></div>
+        <div class="card">
+          <div class="toolbar"><div class="search-box"><span>🔍</span><input type="text" id="clientSearch" placeholder="Buscar..." oninput="renderClients()"/></div></div>
+          <div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Cumpleaños</th><th>Sede</th><th>Órdenes</th><th>Total</th><th></th></tr></thead><tbody id="clientsBody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ANALYTICS -->
+      <div class="page" id="page-analytics">
+        <div class="page-header"><h1>Analíticas globales</h1></div>
+        <div class="stat-grid" id="globalStats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="card"><div class="card-body"><div style="font-weight:700;margin-bottom:10px;">Facturación por sede</div><canvas id="chartSedes" height="130"></canvas></div></div>
+          <div class="card"><div class="card-body"><div style="font-weight:700;margin-bottom:10px;">Top productos</div><canvas id="chartProd" height="130"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="modal-bg" id="orderModal">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="modal-header"><div class="modal-title" id="oModalTitle">Orden</div><button class="modal-close-btn" onclick="closeModal('orderModal')">✕</button></div>
+    <div class="modal-body" id="oModalBody"></div>
+    <div class="modal-footer" id="oModalFooter"></div>
+  </div>
+</div>
+
+<!-- VOUCHER MODAL -->
+<div class="modal-bg" id="voucherModal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-header"><div class="modal-title" id="voucherTitle">Comprobante de pago</div><button class="modal-close-btn" onclick="closeModal('voucherModal')">✕</button></div>
+    <div class="modal-body" style="text-align:center;">
+      <img id="voucherImgFull" src="" alt="" style="width:100%;border-radius:10px;display:none;"/>
+      <div id="voucherNoImg" style="display:none;color:var(--sub);font-size:.85rem;padding:20px 0;">Sin comprobante subido.</div>
+      <div id="voucherSummary" style="margin-top:14px;background:var(--gray);border-radius:10px;padding:12px;text-align:left;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('voucherModal')">Cerrar</button>
+      <button class="btn btn-green-soft" id="voucherConfirmBtn" onclick="confirmFromVoucher()" style="display:none;">✅ Confirmar pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-bg" id="productModal">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header"><div class="modal-title" id="prodModalTitle">Producto</div><button class="modal-close-btn" onclick="closeModal('productModal')">✕</button></div>
+    <div class="modal-body">
+      <div style="margin-bottom:14px;">
+        <label>Foto del producto</label>
+        <div id="prodImgContainer" style="width:100%;aspect-ratio:1;border-radius:10px;background:var(--gray);display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px dashed var(--gray2);overflow:hidden;margin-bottom:8px;" onclick="document.getElementById('prodImgInput').click()">
+          <img id="prodImgPreview" style="width:100%;height:100%;object-fit:cover;display:none;" alt=""/>
+          <div id="prodImgPlaceholder" style="text-align:center;color:var(--sub);font-size:.85rem;">
+            <div style="font-size:2rem;margin-bottom:6px;">📸</div>
+            <div>Toca para subir foto</div>
+          </div>
+        </div>
+        <input type="file" id="prodImgInput" accept="image/*" style="display:none" onchange="previewProdImg(this)"/>
+      </div>
+      <div class="field"><label>Nombre</label><input type="text" id="epName" placeholder="Ej: Tiramisú"/></div>
+      <div class="field"><label>Descripción</label><textarea id="epDesc" placeholder="Ingredientes y características..."></textarea></div>
+      <div class="field"><label>Precio (USD $)</label><input type="number" id="epPrice" step="0.5" placeholder="0.00"/></div>
+      <div class="field"><label>Categoría</label><select id="epCat"><option>Cake Box</option><option>Drinks</option><option>Especiales</option></select></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
+        <span style="font-size:.85rem;font-weight:600;">Disponible</span>
+        <label class="toggle"><input type="checkbox" id="epAvailable" checked/><span class="toggle-sl"></span></label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-red-soft" id="deleteProdBtn" style="display:none;margin-right:auto;" onclick="deleteProduct()">🗑 Eliminar</button>
+      <button class="btn btn-outline" onclick="closeModal('productModal')">Cancelar</button>
+      <button class="btn btn-wine" onclick="saveProduct()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════ FIREBASE + APP SCRIPT ══════════════ -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, getDocs, setDoc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+
+/* ══ FIREBASE CONFIG ══ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDdCZXSoGeTQpFhWst4BuztS0rZegy1drE",
+  authDomain: "mellow-5356f.firebaseapp.com",
+  projectId: "mellow-5356f",
+  storageBucket: "mellow-5356f.firebasestorage.app",
+  messagingSenderId: "822351946880",
+  appId: "1:822351946880:web:ccdb475954208ba514f265"
+};
+
+const SEDES = {
+  caracas:      { label:'Caracas',      short:'CCS',  color:'#2a5c9a', wa:'584242708381', deliveryFee:3 },
+  barquisimeto: { label:'Barquisimeto', short:'BQto', color:'#1a7a3c', wa:'584241000001', deliveryFee:3 },
+  maracaibo:    { label:'Maracaibo',    short:'Mcbo', color:'#8b3a8b', wa:'584261000001', deliveryFee:3 },
+};
+
+const USER_SEDE_MAP = {
+  'owner@mellow.com':        'all',
+  'caracas@mellow.com':      'caracas',
+  'barquisimeto@mellow.com': 'barquisimeto',
+  'maracaibo@mellow.com':    'maracaibo',
+};
+
+/* ══ INIT FIREBASE ══ */
+const app      = initializeApp(FIREBASE_CONFIG);
+const auth     = getAuth(app);
+const db       = getFirestore(app);
+const storage  = getStorage(app);
+
+/* ══ APP STATE ══ */
+let currentUser   = null;
+let currentSede   = null;   // 'all' | 'caracas' | 'barquisimeto' | 'maracaibo'
+let viewSede      = 'all';  // owner can switch view
+let currentOF     = 'all';
+let ordersCache   = [];
+let productsCache = [];
+let tasaActual    = 0;
+let tasaHist      = [];
+let unsubOrders   = null;
+let voucherOrdId  = null;
+let editingProdId = null;
+let pendingProdImgFile = null;
+let sedeSchedules = {};
+
+/* ══ UTILS ══ */
+const SL = {new:'🆕 Por confirmar',confirmed:'✅ Pago confirmado',transit:'🛵 En camino',done:'🏁 Finalizado',cancelled:'❌ Cancelada'};
+const SB = {new:'b-new',confirmed:'b-confirmed',transit:'b-transit',done:'b-done',cancelled:'b-cancelled'};
+const PM = {zelle:'Zelle 💵',pago_movil:'Pago Móvil 📱',efectivo:'Efectivo $',combinado:'Combinado',punto:'Punto de Venta'};
+
+function isBdToday(bd){ if(!bd) return false; const t=new Date(),d=new Date(bd+'T12:00:00'); return d.getMonth()===t.getMonth()&&d.getDate()===t.getDate(); }
+function fmtBd(bd){ if(!bd) return '—'; return new Date(bd+'T12:00:00').toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric'}); }
+function timeAgo(ts){
+  if(!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const diff = Math.floor((Date.now()-d.getTime())/1000);
+  if(diff<60) return diff+'s';
+  const m=Math.floor(diff/60);
+  if(m<60) return m+'min';
+  const h=Math.floor(m/60);
+  if(h<24) return h+'h '+(m%60)+'min';
+  return Math.floor(h/24)+'d';
+}
+function timeAgoBadge(ts,status){
+  if(status==='done'||status==='cancelled') return '';
+  if(!ts) return '';
+  const d=ts.toDate?ts.toDate():new Date(ts);
+  const diff=Math.floor((Date.now()-d.getTime())/1000/60);
+  let cls='time-fresh';
+  if(diff>=30) cls='time-old';
+  else if(diff>=10) cls='time-mid';
+  return `<span class="time-badge ${cls}">⏱ ${timeAgo(ts)}</span>`;
+}
+
+function toast(msg, type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(type?' toast-'+type:'');
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);
+}
+function openModal(id){ document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+window.closeModal = closeModal;
+
+function sedeBadgeHtml(sede){
+  const cfg=SEDES[sede]; if(!cfg) return '';
+  return `<span style="font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:100px;color:#fff;background:${cfg.color}">${cfg.short}</span>`;
+}
+
+function getVisibleOrders(){
+  if(viewSede==='all') return ordersCache;
+  return ordersCache.filter(o=>o.sede===viewSede);
+}
+
+/* ══ AUTH ══ */
+onAuthStateChanged(auth, user => {
+  if(user){
+    const sede = USER_SEDE_MAP[user.email] || null;
+    if(!sede){ auth.signOut(); return; }
+    currentUser = user;
+    currentSede = sede;
+    viewSede    = sede === 'all' ? 'all' : sede;
+    initApp();
+  } else {
+    document.getElementById('loginScreen').style.display='flex';
+    document.getElementById('app').style.display='none';
+    document.getElementById('app').classList.remove('visible');
+    setFbStatus('offline');
+  }
+});
+
+window.doLogin = async function(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const btn   = document.getElementById('loginBtn');
+  const err   = document.getElementById('loginErr');
+  err.style.display='none';
+  btn.disabled=true; btn.textContent='Entrando...';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e){
+    err.style.display='block';
+    btn.disabled=false; btn.textContent='Entrar →';
+  }
+};
+
+window.doLogout = async function(){
+  if(unsubOrders) unsubOrders();
+  await signOut(auth);
+};
+
+/* ══ APP INIT ══ */
+function initApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  const isOwner = currentSede === 'all';
+  const sedeCfg = isOwner ? null : SEDES[currentSede];
+  const color   = isOwner ? '#2a1018' : sedeCfg.color;
+
+  document.getElementById('sidebar').style.background = color;
+
+  const badge = document.getElementById('sidebarBadge');
+  badge.textContent = isOwner ? '👑 Propietario' : sedeCfg.label;
+  badge.style.background = 'rgba(255,255,255,.18)';
+
+  const topBadge = document.getElementById('topbarBadge');
+  topBadge.textContent = isOwner ? '👑 Todas las sedes' : '📍 '+sedeCfg.label;
+  topBadge.style.background = color;
+
+  document.getElementById('userAv').textContent  = currentUser.email.charAt(0).toUpperCase();
+  document.getElementById('userName').textContent = currentUser.email.split('@')[0];
+  document.getElementById('userRole').textContent = isOwner ? 'Propietario' : sedeCfg.label;
+
+  document.getElementById('sedeSwitcher').style.display = isOwner ? 'flex' : 'none';
+  document.getElementById('navAnalytics').style.display  = isOwner ? 'flex' : 'none';
+
+  setFbStatus('online');
+  subscribeToOrders();
+  loadProducts();
+  loadTasa();
+  loadSchedules();
+  nav('dashboard');
+}
+
+function setFbStatus(s){
+  const el=document.getElementById('fbStatus');
+  if(s==='online'){ el.className='fb-status fb-online'; el.textContent='🟢 Conectado'; }
+  else if(s==='offline'){ el.className='fb-status fb-offline'; el.textContent='🔴 Sin conexión'; }
+  else { el.className='fb-status fb-loading'; el.textContent='⏳ Conectando...'; }
+}
+
+/* ══ NAV ══ */
+window.nav = function(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name)?.classList.add('active');
+  document.querySelector(`[onclick="nav('${name}')"]`)?.classList.add('active');
+  const T={dashboard:'Dashboard',orders:'Órdenes',store:'Editor de tienda',motorizados:'Motorizados',delivery:'Zonas delivery',horarios:'Horarios',tasa:'Tasa del día',clients:'Clientes',analytics:'Analíticas globales'};
+  document.getElementById('pageTitle').textContent=T[name]||name;
+  const liveDot=document.getElementById('liveDot');
+  liveDot.style.display=(name==='orders'||name==='dashboard')?'inline-flex':'none';
+  if(name==='orders') renderOrders();
+  if(name==='dashboard') renderDashboard();
+  if(name==='store') renderStoreEditor();
+  if(name==='motorizados') renderMotorizados();
+  if(name==='delivery') renderZones();
+  if(name==='horarios') renderSchedule();
+  if(name==='tasa'){ renderTasaHist(); updateTasaDisplay(); }
+  if(name==='clients') renderClients();
+  if(name==='analytics') renderAnalytics();
+};
+
+window.ownerSwitch = function(sede, el){
+  viewSede=sede;
+  document.querySelectorAll('.ssw-btn').forEach(b=>{ b.classList.remove('active'); b.style.background='#fff'; b.style.color='var(--sub)'; b.style.borderColor='var(--gray2)'; });
+  el.classList.add('active');
+  if(sede!=='all'){ const c=SEDES[sede].color; el.style.background=c; el.style.color='#fff'; el.style.borderColor=c; }
+  const page=document.querySelector('.page.active');
+  if(page){ nav(page.id.replace('page-','')); }
+};
+
+/* ══ FIRESTORE: ORDERS REALTIME ══ */
+function subscribeToOrders(){
+  if(unsubOrders) unsubOrders();
+  let q;
+  if(currentSede==='all'){
+    q = query(collection(db,'orders'), orderBy('createdAt','desc'));
+  } else {
+    q = query(collection(db,'orders'), where('sede','==',currentSede), orderBy('createdAt','desc'));
+  }
+  unsubOrders = onSnapshot(q, (snap) => {
+    ordersCache = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const pendingCount = ordersCache.filter(o=>o.status==='new').length;
+    document.getElementById('newBadge').textContent = pendingCount;
+    const page=document.querySelector('.page.active');
+    if(page){
+      const pname=page.id.replace('page-','');
+      if(pname==='dashboard') renderDashboard();
+      if(pname==='orders') renderOrders();
+    }
+  }, (err)=>{ console.error(err); setFbStatus('offline'); });
+}
+
+/* ══ FIRESTORE: PRODUCTS ══ */
+async function loadProducts(){
+  const snap = await getDocs(query(collection(db,'products'), orderBy('order','asc')));
+  productsCache = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderStoreEditor();
+}
+
+/* ══ FIRESTORE: TASA ══ */
+async function loadTasa(){
+  try {
+    const snap = await getDocs(query(collection(db,'tasa'), orderBy('date','desc')));
+    tasaHist = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(tasaHist.length){ tasaActual=tasaHist[0].rate; updateTasaDisplay(); }
+  } catch(e){ console.log('No tasa data yet'); }
+}
+
+/* ══ FIRESTORE: SCHEDULES ══ */
+async function loadSchedules(){
+  try {
+    const snap = await getDocs(collection(db,'schedules'));
+    snap.docs.forEach(d=>{ sedeSchedules[d.id]=d.data(); });
+    renderSchedule();
+  } catch(e){ initDefaultSchedules(); }
+}
+
+function initDefaultSchedules(){
+  const defaultDays=[
+    {day:'Lunes',open:'10:00',close:'19:00',active:true},{day:'Martes',open:'10:00',close:'19:00',active:true},
+    {day:'Miércoles',open:'10:00',close:'19:00',active:true},{day:'Jueves',open:'10:00',close:'19:00',active:true},
+    {day:'Viernes',open:'10:00',close:'19:00',active:true},{day:'Sábado',open:'10:00',close:'20:00',active:true},
+    {day:'Domingo',open:'',close:'',active:false}
+  ];
+  Object.keys(SEDES).forEach(sk=>{ sedeSchedules[sk]={manualClosed:false,days:[...defaultDays.map(d=>({...d}))]};});
+}
+
+/* ══ DASHBOARD ══ */
+function renderDashboard(){
+  const orders=getVisibleOrders();
+  document.getElementById('ds-new').textContent=orders.filter(o=>o.status==='new').length;
+  document.getElementById('ds-conf').textContent=orders.filter(o=>o.status==='confirmed').length;
+  document.getElementById('ds-transit').textContent=orders.filter(o=>o.status==='transit').length;
+  const todayRev=orders.filter(o=>o.status!=='cancelled').reduce((s,o)=>s+(o.total||0),0);
+  document.getElementById('ds-rev').textContent='$'+todayRev;
+
+  const bdToday=orders.filter(o=>isBdToday(o.birthdate)&&o.status!=='cancelled'&&o.status!=='done');
+  const bdEl=document.getElementById('bdAlert'), bdTxt=document.getElementById('bdAlertText');
+  if(bdToday.length){ bdEl.style.display='flex'; bdTxt.textContent='Cumpleaños hoy: '+bdToday.map(o=>o.client.split(' ')[0]).join(', '); }
+  else bdEl.style.display='none';
+
+  document.getElementById('dashTable').innerHTML=orders.slice(0,10).map(o=>`
+    <tr style="cursor:pointer;" onclick="viewOrder('${o.id}')">
+      <td><strong style="color:var(--blue)">#${o.id?.slice(-6)||'—'}</strong></td>
+      <td>${sedeBadgeHtml(o.sede)}</td>
+      <td><strong>${o.client||'—'}</strong>${isBdToday(o.birthdate)?' 🎂':''}</td>
+      <td style="font-size:.76rem;color:var(--sub)">${(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—'}${o.vela?' 🕯️':''}${o.nota?' 📝':''}</td>
+      <td style="font-size:.77rem;white-space:nowrap;">${o.deliveryDate||'—'} ${o.deliveryTime||''}</td>
+      <td><strong>$${o.total||0}</strong></td>
+      <td><span class="badge ${SB[o.status]||'b-new'}">${SL[o.status]||'—'}</span></td>
+      <td>${timeAgoBadge(o.createdAt,o.status)||timeAgo(o.createdAt)}</td>
+    </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--sub)">Sin órdenes</td></tr>';
+}
+
+/* ══ ORDERS ══ */
+window.setOF = function(s,el){ currentOF=s; document.querySelectorAll('#orderFtabs .ftab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); renderOrders(); };
+
+function renderOrders(){
+  const q=(document.getElementById('orderSearch')?.value||'').toLowerCase();
+  const list=getVisibleOrders().filter(o=>{
+    const mf=currentOF==='all'||o.status===currentOF;
+    const ms=!q||(o.client||'').toLowerCase().includes(q)||String(o.id||'').includes(q)||(o.phone||'').includes(q);
+    return mf&&ms;
+  });
+
+  document.getElementById('ordersBody').innerHTML=list.map(o=>{
+    const itemsStr=(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—';
+    const bsCol=tasaActual&&(o.payMethod==='pago_movil'||o.payMethod==='punto')?`<br><small style="color:var(--yellow);font-weight:600">Bs.${((o.total||0)*tasaActual).toFixed(0)}</small>`:'';
+    const voucherCol = o.voucherUrl
+      ? `<img class="voucher-thumb" src="${o.voucherUrl}" onclick="event.stopPropagation();openVoucher('${o.id}')" title="Ver comprobante"/>`
+      : (o.payMethod==='efectivo'||o.payMethod==='punto')
+        ? '<span style="font-size:.72rem;color:var(--sub);">En sede</span>'
+        : '<span class="no-voucher">Sin comp.</span>';
+
+    return `<tr style="cursor:pointer;" onclick="viewOrder('${o.id}')">
+      <td><strong style="color:var(--blue)">#${(o.id||'').slice(-6)}</strong></td>
+      <td>${sedeBadgeHtml(o.sede)}</td>
+      <td>${timeAgoBadge(o.createdAt,o.status)||'—'}</td>
+      <td><strong>${o.client||'—'}</strong>${isBdToday(o.birthdate)?' 🎂':''}</td>
+      <td><a href="https://wa.me/${(o.phone||'').replace(/\D/g,'')}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue);font-size:.8rem">${o.phone||'—'}</a></td>
+      <td style="font-size:.77rem;color:var(--sub);max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${itemsStr}${o.vela?' 🕯️':''}${o.nota?' 📝':''}</td>
+      <td style="font-size:.77rem;white-space:nowrap;">${o.deliveryDate||'—'}<br><span style="color:var(--sub)">${o.deliveryTime||''}</span></td>
+      <td><strong>$${o.total||0}</strong>${bsCol}${o.deliveryFee?`<br><small style="color:var(--sub)">+$${o.deliveryFee} delivery</small>`:''}</td>
+      <td style="font-size:.75rem">${PM[o.payMethod]||'—'}</td>
+      <td><span class="badge ${SB[o.status]||'b-new'}">${SL[o.status]||'—'}</span></td>
+      <td style="font-size:.8rem">${o.motoName||'Sin asignar'}</td>
+      <td onclick="event.stopPropagation()">${voucherCol}</td>
+      <td onclick="event.stopPropagation()">
+        <div style="display:flex;gap:3px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-xs" onclick="viewOrder('${o.id}')">👁</button>
+          ${o.status==='new'?`<button class="btn btn-green-soft btn-xs" onclick="chgStatus('${o.id}','confirmed')">✅</button>`:''}
+          ${o.status==='confirmed'?`<button class="btn btn-orange-soft btn-xs" onclick="viewOrder('${o.id}')">🛵</button>`:''}
+          ${o.status==='transit'?`<button class="btn btn-blue-soft btn-xs" onclick="chgStatus('${o.id}','done')">🏁</button>`:''}
+          ${['new','confirmed'].includes(o.status)?`<button class="btn btn-red-soft btn-xs" onclick="chgStatus('${o.id}','cancelled')">✕</button>`:''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="13" style="text-align:center;padding:28px;color:var(--sub)">Sin órdenes</td></tr>';
+}
+
+window.chgStatus = async function(id, newStatus){
+  try {
+    await updateDoc(doc(db,'orders',id), { status: newStatus, updatedAt: serverTimestamp() });
+    const o = ordersCache.find(x=>x.id===id); if(!o) return;
+    o.status = newStatus;
+    const sedeWa = SEDES[o.sede]?.wa || '584242708381';
+
+    if(newStatus==='confirmed'){
+      const msg=encodeURIComponent(`Hola ${(o.client||'').split(' ')[0]} 👋🏼\n\n✅ *Su pedido ya fue confirmado.*\nCualquier duda estamos atentos.\n\n¡Gracias por elegir Mellow! 🎂`);
+      window.open(`https://wa.me/${(o.phone||'').replace(/\D/g,'')}?text=${msg}`,'_blank');
+      toast('✅ Pago confirmado — WhatsApp enviado', 'success');
+    } else if(newStatus==='done') toast('🏁 Pedido finalizado', 'success');
+    else if(newStatus==='cancelled') toast('❌ Cancelado');
+  } catch(e){ toast('Error: '+e.message,'error'); }
+};
+
+window.viewOrder = function(id){
+  const o=ordersCache.find(x=>x.id===id); if(!o) return;
+  const sedeCfg=SEDES[o.sede]||{};
+  const motos=sedeMotorizados[o.sede]||[];
+  const moto=o.motoId?motos.find(m=>m.id===o.motoId):null;
+  const mapLink=o.lat?`<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" style="color:var(--blue);">🗺️ Google Maps</a>`:'—';
+  const bs=tasaActual&&(o.payMethod==='pago_movil'||o.payMethod==='punto')?`<br><span style="color:var(--yellow);font-weight:600;font-size:.82rem">Bs. ${((o.total||0)*tasaActual).toFixed(2)}</span>`:'';
+  const bdToday=isBdToday(o.birthdate);
+  const steps=[{k:'new',l:'Por confirmar'},{k:'confirmed',l:'Pago conf.'},{k:'transit',l:'En camino'},{k:'done',l:'Finalizado'}];
+  const curIdx=steps.findIndex(s=>s.k===o.status);
+  const itemsStr=(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—';
+
+  document.getElementById('oModalTitle').innerHTML=`Orden #${(o.id||'').slice(-6)} ${sedeBadgeHtml(o.sede)}`;
+  document.getElementById('oModalBody').innerHTML=`
+    ${bdToday?`<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="font-size:1.2rem;">🎂</span><div style="font-weight:700;color:#b8860b;font-size:.88rem;">¡Hoy cumpleaños de ${(o.client||'').split(' ')[0]}!</div></div>`:''}
+    ${o.status==='cancelled'?`<div style="background:var(--red-l);border-radius:8px;padding:10px 14px;font-size:.84rem;font-weight:700;color:var(--red);margin-bottom:12px;">❌ Orden cancelada</div>`:
+    `<div class="stepper">${steps.map((s,i)=>`<div class="step-i ${i<curIdx?'done':i===curIdx?'active':''}"><div class="step-c">${i<curIdx?'✓':i+1}</div><div class="step-l">${s.l}</div></div>`).join('')}</div>`}
+    <div class="ods"><div class="ods-title">📋 Orden</div>
+      <div class="ods-row"><span class="ods-k">ID</span><span class="ods-v">${o.id}</span></div>
+      <div class="ods-row"><span class="ods-k">Recibido</span><span class="ods-v">${timeAgo(o.createdAt)} · ${o.createdAt?.toDate?o.createdAt.toDate().toLocaleString('es-VE'):o.date||'—'}</span></div>
+      <div class="ods-row"><span class="ods-k">Entrega programada</span><span class="ods-v" style="color:var(--blue);font-weight:700;">${o.deliveryDate||'—'} a las ${o.deliveryTime||'—'}</span></div>
+    </div>
+    <div class="ods"><div class="ods-title">👤 Cliente</div>
+      <div class="ods-row"><span class="ods-k">Nombre</span><span class="ods-v">${o.client||'—'}</span></div>
+      <div class="ods-row"><span class="ods-k">Teléfono</span><span class="ods-v"><a href="https://wa.me/${(o.phone||'').replace(/\D/g,'')}" target="_blank" style="color:var(--blue)">${o.phone||'—'}</a></span></div>
+      <div class="ods-row"><span class="ods-k">Cumpleaños</span><span class="ods-v">${fmtBd(o.birthdate)}${bdToday?' 🎂':''}</span></div>
+    </div>
+    <div class="ods"><div class="ods-title">📦 Pedido</div>
+      <div class="ods-row"><span class="ods-k">Productos</span><span class="ods-v">${itemsStr}</span></div>
+      <div class="ods-row"><span class="ods-k">Vela</span><span class="ods-v">${o.vela?'🕯️ Sí':'No'}</span></div>
+      ${o.nota?`<div class="ods-row"><span class="ods-k">Nota</span><span class="ods-v" style="color:var(--blue)">📝 "${o.nota}"</span></div>`:''}
+    </div>
+    <div class="ods"><div class="ods-title">🚚 Entrega</div>
+      <div class="ods-row"><span class="ods-k">Tipo</span><span class="ods-v">${o.type==='delivery'?'🛵 Delivery':'🏪 Recoger en tienda'}</span></div>
+      ${o.address?`<div class="ods-row"><span class="ods-k">Dirección</span><span class="ods-v" style="max-width:200px">${o.address}</span></div>`:''}
+      <div class="ods-row"><span class="ods-k">Mapa</span><span class="ods-v">${mapLink}</span></div>
+      <div class="ods-row"><span class="ods-k">Motorizado</span><span class="ods-v">${moto?moto.name:'Sin asignar'}</span></div>
+    </div>
+    <div class="ods"><div class="ods-title">💳 Pago</div>
+      <div class="ods-row"><span class="ods-k">Método</span><span class="ods-v">${PM[o.payMethod]||'—'}</span></div>
+      <div class="ods-row"><span class="ods-k">Subtotal</span><span class="ods-v">$${o.subtotal||o.total||0}</span></div>
+      ${o.deliveryFee?`<div class="ods-row"><span class="ods-k">Delivery</span><span class="ods-v">$${o.deliveryFee}</span></div>`:''}
+      <div class="ods-row" style="border-top:1px solid var(--gray2);padding-top:6px;margin-top:4px;"><span class="ods-k" style="font-weight:700;">Total</span><span class="ods-v" style="font-size:1.05rem">$${o.total||0}${bs}</span></div>
+      ${o.voucherUrl?`<div style="margin-top:10px;"><img src="${o.voucherUrl}" onclick="openVoucher('${o.id}')" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid var(--gray2);"/></div>`:'<div style="margin-top:8px;font-size:.78rem;color:var(--sub);">Sin comprobante</div>'}
+    </div>`;
+
+  const f=document.getElementById('oModalFooter'); f.innerHTML='';
+  if(o.status==='new') f.innerHTML+=`<button class="btn btn-green-soft btn-sm" onclick="chgStatus('${o.id}','confirmed');closeModal('orderModal')">✅ Confirmar pago</button>`;
+  if(o.status==='confirmed') f.innerHTML+=`<button class="btn btn-orange-soft btn-sm" onclick="closeModal('orderModal');openMotoAssignInline('${o.id}')">🛵 Asignar motorizado</button>`;
+  if(o.status==='transit') f.innerHTML+=`<button class="btn btn-blue-soft btn-sm" onclick="chgStatus('${o.id}','done');closeModal('orderModal')">🏁 Finalizar</button>`;
+  if(['new','confirmed'].includes(o.status)) f.innerHTML+=`<button class="btn btn-red-soft btn-sm" onclick="chgStatus('${o.id}','cancelled');closeModal('orderModal')">✕ Cancelar</button>`;
+  f.innerHTML+=`<button class="btn btn-outline btn-sm" onclick="closeModal('orderModal')">Cerrar</button>`;
+  openModal('orderModal');
+};
+
+/* ══ VOUCHER ══ */
+window.openVoucher = function(ordId){
+  voucherOrdId=ordId;
+  const o=ordersCache.find(x=>x.id===ordId); if(!o) return;
+  document.getElementById('voucherTitle').textContent=`Comprobante · #${(o.id||'').slice(-6)}`;
+  const img=document.getElementById('voucherImgFull'), noImg=document.getElementById('voucherNoImg');
+  if(o.voucherUrl){ img.src=o.voucherUrl; img.style.display='block'; noImg.style.display='none'; }
+  else { img.style.display='none'; noImg.style.display='block'; }
+  document.getElementById('voucherSummary').innerHTML=`
+    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.84rem;"><span style="color:var(--sub)">Cliente</span><span style="font-weight:600">${o.client||'—'}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.84rem;"><span style="color:var(--sub)">Método</span><span style="font-weight:600">${PM[o.payMethod]||'—'}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.84rem;"><span style="color:var(--sub)">Subtotal</span><span>$${o.subtotal||o.total||0}</span></div>
+    ${o.deliveryFee?`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.84rem;"><span style="color:var(--sub)">Delivery</span><span>$${o.deliveryFee}</span></div>`:''}
+    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:.95rem;font-weight:700;border-top:1px solid var(--gray2);margin-top:4px;"><span>Total</span><span>$${o.total||0}</span></div>
+    ${tasaActual&&(o.payMethod==='pago_movil'||o.payMethod==='punto')?`<div style="font-size:.8rem;color:var(--yellow);font-weight:600;margin-top:4px;">Bs. ${((o.total||0)*tasaActual).toFixed(2)}</div>`:''}`;
+  const confirmBtn=document.getElementById('voucherConfirmBtn');
+  confirmBtn.style.display=o.status==='new'?'flex':'none';
+  openModal('voucherModal');
+};
+window.confirmFromVoucher = function(){ if(voucherOrdId){ chgStatus(voucherOrdId,'confirmed'); closeModal('voucherModal'); } };
+
+/* ══ MOTO ASSIGN ══ */
+let sedeMotorizados = {
+  caracas:      [{id:'j1',name:'Juan Pérez',phone:'+584121234567',color:'#2a5c9a',deliveries:18},{id:'e1',name:'Enrique Gómez',phone:'+584147654321',color:'#1a7a3c',deliveries:12}],
+  barquisimeto: [{id:'l1',name:'Luis Herrera',phone:'+584241991234',color:'#c75000',deliveries:8}],
+  maracaibo:    [{id:'c1',name:'Carlos Rivas',phone:'+584261881234',color:'#8b3a8b',deliveries:5}],
+};
+let assignOrdId2=null, selMotoId=null;
+
+window.openMotoAssignInline = function(ordId){
+  assignOrdId2=ordId; selMotoId=null;
+  const o=ordersCache.find(x=>x.id===ordId); if(!o) return;
+  const motos=sedeMotorizados[o.sede]||[];
+  document.getElementById('oModalTitle').textContent=`Asignar motorizado · #${(o.id||'').slice(-6)}`;
+  document.getElementById('oModalBody').innerHTML=`
+    <div style="font-size:.84rem;color:var(--sub);margin-bottom:14px;">Selecciona quién lleva el pedido <strong>#${(o.id||'').slice(-6)}</strong> a ${o.client}:</div>
+    <div style="display:grid;grid-template-columns:repeat(${Math.min(motos.length,3)},1fr);gap:8px;margin-bottom:16px;">
+      ${motos.map(m=>`
+        <div id="mc-${m.id}" onclick="selMoto2('${m.id}')" style="border:2px solid var(--gray2);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .2s;">
+          <div style="width:44px;height:44px;border-radius:50%;background:${m.color};color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:.95rem;">${m.name.split(' ').map(x=>x[0]).join('')}</div>
+          <div style="font-size:.82rem;font-weight:700;">${m.name}</div>
+          <div style="font-size:.68rem;color:var(--sub);">${m.deliveries} entregas</div>
+        </div>`).join('')}
+    </div>`;
+  document.getElementById('oModalFooter').innerHTML=`
+    <button class="btn btn-outline btn-sm" onclick="viewOrder('${ordId}')">← Volver</button>
+    <button class="btn btn-wine btn-sm" onclick="confirmMotoAssign2()">Asignar y notificar 🛵</button>`;
+};
+
+window.selMoto2 = function(id){
+  selMotoId=id;
+  document.querySelectorAll('[id^="mc-"]').forEach(c=>{c.style.borderColor='var(--gray2)';c.style.background='';});
+  const el=document.getElementById('mc-'+id); if(el){el.style.borderColor='var(--blue)';el.style.background='var(--blue-l)';}
+};
+
+window.confirmMotoAssign2 = async function(){
+  if(!selMotoId){toast('⚠️ Selecciona un motorizado');return;}
+  const o=ordersCache.find(x=>x.id===assignOrdId2); if(!o) return;
+  const motos=sedeMotorizados[o.sede]||[];
+  const m=motos.find(x=>x.id===selMotoId); if(!m) return;
+  try {
+    await updateDoc(doc(db,'orders',o.id),{status:'transit',motoId:m.id,motoName:m.name,updatedAt:serverTimestamp()});
+    m.deliveries++;
+    const mapLink=o.lat?`\nhttps://www.google.com/maps?q=${o.lat},${o.lng}`:'';
+    const velaLine=o.vela?'\n🕯️ *LLEVAR VELA*':'';
+    const notaLine=o.nota?`\n📝 "${o.nota}"`: '';
+    const msgC=encodeURIComponent(`Hola ${(o.client||'').split(' ')[0]} 👋🏼\n\n🛵 *Su pedido está en camino* con nuestro motorizado *${m.name}*.\n📱 Contacto: ${m.phone}${mapLink}\n\n¡Gracias por elegir Mellow! 🎂`);
+    window.open(`https://wa.me/${(o.phone||'').replace(/\D/g,'')}?text=${msgC}`,'_blank');
+    const itemsStr=(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—';
+    const msgM=encodeURIComponent(`🛵 *ENTREGA MELLOW #${(o.id||'').slice(-6)}*\n📍 ${SEDES[o.sede]?.label||o.sede}\n\n👤 ${o.client} · ${o.phone}\n📦 ${itemsStr}${velaLine}${notaLine}\n📍 ${o.address||'Retiro en tienda'}${o.lat?'\n🗺️ https://www.google.com/maps?q='+o.lat+','+o.lng:''}\n📅 ${o.deliveryDate} ${o.deliveryTime}`);
+    setTimeout(()=>window.open(`https://wa.me/${m.phone.replace(/\D/g,'')}?text=${msgM}`,'_blank'),600);
+    closeModal('orderModal');
+    toast(`🛵 Asignado a ${m.name} — notificados`, 'success');
+  } catch(e){ toast('Error: '+e.message,'error'); }
+};
+
+/* ══ STORE EDITOR ══ */
+function renderStoreEditor(){
+  const list=document.getElementById('productEditorList'); if(!list) return;
+  if(!productsCache.length){ list.innerHTML='<div style="text-align:center;padding:30px;color:var(--sub);">No hay productos aún. Agrega el primero.</div>'; return; }
+  list.innerHTML=productsCache.map((p,idx)=>`
+    <div class="product-editor-item" id="pei-${p.id}" draggable="true" ondragstart="dragStart(event,'${p.id}')" ondragover="dragOver(event)" ondrop="dropOn(event,'${p.id}')">
+      <span class="pe-drag">⠿</span>
+      <img class="pe-thumb" src="${p.img||''}" alt="${p.name}" onerror="this.src=''" onclick="editProduct('${p.id}')"/>
+      <div class="pe-info">
+        <div class="pe-name">${p.name}</div>
+        <div class="pe-cat">${p.cat||'Sin categoría'}</div>
+        <div class="pe-price">$${p.price||0}</div>
+      </div>
+      <div class="pe-actions">
+        <label class="toggle" title="${p.available?'Disponible':'Agotado'}">
+          <input type="checkbox" ${p.available?'checked':''} onchange="toggleProductAvail('${p.id}',this.checked)"/>
+          <span class="toggle-sl"></span>
+        </label>
+        <button class="btn btn-outline btn-xs" onclick="editProduct('${p.id}')">✏️ Editar</button>
+      </div>
+    </div>`).join('');
+}
+
+let draggedId=null;
+window.dragStart = function(e,id){ draggedId=id; e.dataTransfer.effectAllowed='move'; };
+window.dragOver  = function(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; };
+window.dropOn    = async function(e,targetId){
+  e.preventDefault();
+  if(!draggedId||draggedId===targetId) return;
+  const fromIdx=productsCache.findIndex(p=>p.id===draggedId);
+  const toIdx=productsCache.findIndex(p=>p.id===targetId);
+  const [moved]=productsCache.splice(fromIdx,1);
+  productsCache.splice(toIdx,0,moved);
+  // Update order in Firestore
+  const batch=productsCache.map((p,i)=>updateDoc(doc(db,'products',p.id),{order:i}));
+  await Promise.all(batch);
+  renderStoreEditor();
+  toast('✅ Orden actualizado','success');
+};
+
+window.toggleProductAvail = async function(id,val){
+  try {
+    await updateDoc(doc(db,'products',id),{available:val});
+    const p=productsCache.find(x=>x.id===id); if(p) p.available=val;
+    toast(val?'✅ Producto disponible':'⛔ Marcado como agotado');
+  } catch(e){ toast('Error: '+e.message,'error'); }
+};
+
+window.openAddProduct = function(){
+  editingProdId=null; pendingProdImgFile=null;
+  document.getElementById('prodModalTitle').textContent='Agregar producto';
+  document.getElementById('deleteProdBtn').style.display='none';
+  ['epName','epDesc','epPrice'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('epCat').value='Cake Box';
+  document.getElementById('epAvailable').checked=true;
+  document.getElementById('prodImgPreview').style.display='none';
+  document.getElementById('prodImgPlaceholder').style.display='block';
+  openModal('productModal');
+};
+
+window.editProduct = function(id){
+  editingProdId=id; pendingProdImgFile=null;
+  const p=productsCache.find(x=>x.id===id); if(!p) return;
+  document.getElementById('prodModalTitle').textContent='Editar producto';
+  document.getElementById('deleteProdBtn').style.display='flex';
+  document.getElementById('epName').value=p.name||'';
+  document.getElementById('epDesc').value=p.desc||'';
+  document.getElementById('epPrice').value=p.price||0;
+  document.getElementById('epCat').value=p.cat||'Cake Box';
+  document.getElementById('epAvailable').checked=!!p.available;
+  if(p.img){ document.getElementById('prodImgPreview').src=p.img; document.getElementById('prodImgPreview').style.display='block'; document.getElementById('prodImgPlaceholder').style.display='none'; }
+  else { document.getElementById('prodImgPreview').style.display='none'; document.getElementById('prodImgPlaceholder').style.display='block'; }
+  openModal('productModal');
+};
+
+window.previewProdImg = function(input){
+  const file=input.files[0]; if(!file) return;
+  pendingProdImgFile=file;
+  const r=new FileReader(); r.onload=e=>{ document.getElementById('prodImgPreview').src=e.target.result; document.getElementById('prodImgPreview').style.display='block'; document.getElementById('prodImgPlaceholder').style.display='none'; }; r.readAsDataURL(file);
+};
+
+window.saveProduct = async function(){
+  const name=document.getElementById('epName').value.trim();
+  if(!name){ toast('⚠️ El nombre es obligatorio'); return; }
+  const data={
+    name, desc:document.getElementById('epDesc').value.trim(),
+    price:parseFloat(document.getElementById('epPrice').value)||0,
+    cat:document.getElementById('epCat').value,
+    available:document.getElementById('epAvailable').checked,
+  };
+  try {
+    if(pendingProdImgFile){
+      const imgRef=ref(storage,`products/${Date.now()}_${pendingProdImgFile.name}`);
+      const snap=await new Promise((res,rej)=>{ const t=uploadBytesResumable(imgRef,pendingProdImgFile); t.on('state_changed',null,rej,()=>res(t.snapshot)); });
+      data.img=await getDownloadURL(snap.ref);
+    }
+    if(editingProdId){
+      await updateDoc(doc(db,'products',editingProdId),data);
+      const idx=productsCache.findIndex(x=>x.id===editingProdId);
+      if(idx>-1) productsCache[idx]={...productsCache[idx],...data};
+      toast('✅ Producto actualizado','success');
+    } else {
+      data.order=productsCache.length;
+      const ref2=await addDoc(collection(db,'products'),data);
+      productsCache.push({id:ref2.id,...data});
+      toast('✅ Producto agregado','success');
+    }
+    closeModal('productModal'); renderStoreEditor();
+  } catch(e){ toast('Error: '+e.message,'error'); }
+};
+
+window.deleteProduct = async function(){
+  if(!editingProdId) return;
+  if(!confirm('¿Eliminar este producto?')) return;
+  try {
+    await deleteDoc(doc(db,'products',editingProdId));
+    productsCache=productsCache.filter(x=>x.id!==editingProdId);
+    closeModal('productModal'); renderStoreEditor();
+    toast('🗑 Producto eliminado');
+  } catch(e){ toast('Error: '+e.message,'error'); }
+};
+
+/* ══ BANNER UPLOAD ══ */
+window.uploadBanner = async function(input){
+  const file=input.files[0]; if(!file) return;
+  const sede=currentSede==='all'?'global':currentSede;
+  const pr=document.getElementById('bannerUploadProgress');
+  const bar=document.getElementById('bannerProgressBar');
+  const txt=document.getElementById('bannerProgressText');
+  pr.style.display='block';
+  try {
+    const imgRef=ref(storage,`banners/${sede}_banner`);
+    const task=uploadBytesResumable(imgRef,file);
+    task.on('state_changed', snap=>{ const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100); bar.style.width=pct+'%'; txt.textContent=`Subiendo ${pct}%...`; });
+    await new Promise((res,rej)=>task.on('state_changed',null,rej,res));
+    const url=await getDownloadURL(imgRef);
+    await setDoc(doc(db,'settings',`banner_${sede}`),{url,updatedAt:serverTimestamp()});
+    document.getElementById('bannerPreview').src=url;
+    document.getElementById('bannerPreview').style.display='block';
+    document.getElementById('bannerPlaceholder').style.display='none';
+    txt.textContent='✅ Banner guardado';
+    setTimeout(()=>{ pr.style.display='none'; },2000);
+    toast('✅ Banner actualizado','success');
+  } catch(e){ txt.textContent='Error: '+e.message; toast('Error: '+e.message,'error'); }
+};
+
+/* ══ MOTORIZADOS ══ */
+function renderMotorizados(){
+  const sede=viewSede==='all'?'caracas':viewSede;
+  const motos=sedeMotorizados[sede]||[];
+  const orders=getVisibleOrders();
+  document.getElementById('motoGrid').innerHTML=motos.map(m=>`
+    <div class="moto-card-big">
+      <div class="moto-av" style="background:${m.color}">${m.name.split(' ').map(x=>x[0]).join('')}</div>
+      <div style="font-size:1rem;font-weight:700;">${m.name}</div>
+      <div style="font-size:.75rem;color:var(--sub);margin-top:2px;">${m.phone}</div>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:10px;">
+        <div style="text-align:center;"><div style="font-size:1.3rem;font-weight:700;color:var(--blue)">${m.deliveries}</div><div style="font-size:.68rem;color:var(--sub)">Totales</div></div>
+        <div style="text-align:center;"><div style="font-size:1.3rem;font-weight:700;color:var(--green)">${orders.filter(o=>o.sede===sede&&o.motoId===m.id&&o.status==='done').length}</div><div style="font-size:.68rem;color:var(--sub)">Completadas</div></div>
+        <div style="text-align:center;"><div style="font-size:1.3rem;font-weight:700;color:var(--orange)">${orders.filter(o=>o.sede===sede&&o.motoId===m.id&&o.status==='transit').length}</div><div style="font-size:.68rem;color:var(--sub)">En camino</div></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:6px;justify-content:center;">
+        <a href="https://wa.me/${m.phone.replace(/\D/g,'')}" target="_blank"><button class="btn btn-green-soft btn-sm">💬 WA</button></a>
+        <button class="btn btn-red-soft btn-sm" onclick="delMoto('${m.id}','${sede}')">🗑</button>
+      </div>
+    </div>`).join('')||'<div style="color:var(--sub);font-size:.85rem;">Sin motorizados.</div>';
+  const hist=orders.filter(o=>o.sede===sede&&o.motoId);
+  document.getElementById('motoHistBody').innerHTML=hist.map(o=>`
+    <tr><td><strong>${motos.find(m=>m.id===o.motoId)?.name||'—'}</strong></td>
+    <td><span style="color:var(--blue);cursor:pointer;font-weight:700;" onclick="viewOrder('${o.id}')">#${(o.id||'').slice(-6)}</span></td>
+    <td>${o.client||'—'}</td><td style="font-size:.75rem;color:var(--sub);max-width:130px;">${o.address||'Retiro'}</td>
+    <td style="font-size:.78rem;">${o.deliveryDate||'—'} ${o.deliveryTime||''}</td>
+    <td><span class="badge ${SB[o.status]||'b-new'}">${SL[o.status]||'—'}</span></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--sub)">Sin entregas</td></tr>';
+}
+
+window.addMoto = function(){
+  const sede=viewSede==='all'?'caracas':viewSede;
+  const name=prompt('Nombre del motorizado:'); if(!name) return;
+  const phone=prompt('Teléfono WhatsApp (+58...):');
+  const cols=['#2a5c9a','#1a7a3c','#8b3a8b','#c75000'];
+  if(!sedeMotorizados[sede]) sedeMotorizados[sede]=[];
+  sedeMotorizados[sede].push({id:'m'+Date.now(),name:name.trim(),phone:phone||'',color:cols[sedeMotorizados[sede].length%cols.length],deliveries:0});
+  renderMotorizados(); toast('✅ Motorizado agregado');
+};
+window.delMoto = function(id,sede){
+  if(!confirm('¿Eliminar?')) return;
+  sedeMotorizados[sede]=sedeMotorizados[sede].filter(m=>m.id!==id);
+  renderMotorizados(); toast('🗑 Eliminado');
+};
+
+/* ══ DELIVERY ZONES ══ */
+let deliveryZones={
+  caracas:      [{name:'La Trinidad / Las Mercedes',price:3},{name:'Altamira / Chacao',price:3},{name:'Macaracuay / Palo Verde',price:3},{name:'Fuera del área',price:5}],
+  barquisimeto: [{name:'Centro / Zona Este',price:3},{name:'Zona Oeste',price:3},{name:'Fuera del área',price:5}],
+  maracaibo:    [{name:'Centro / Circunvalación 1',price:3},{name:'Zona Norte',price:3},{name:'Fuera del área',price:5}],
+};
+function renderZones(){
+  const sede=viewSede==='all'?'caracas':viewSede;
+  document.getElementById('zonesCardTitle').textContent='Zonas · '+(SEDES[sede]?.label||sede);
+  const zones=deliveryZones[sede]||[];
+  document.getElementById('zonesList').innerHTML=zones.map((z,i)=>`
+    <div class="zone-row">
+      <input class="zone-name-inp" type="text" value="${z.name}" id="zn-${i}" placeholder="Zona"/>
+      <span style="font-size:.8rem;color:var(--sub);">$</span>
+      <input class="zone-price-inp" type="number" value="${z.price}" id="zp-${i}" step="0.5" min="0"/>
+      <button style="background:var(--red-l);color:var(--red);border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.8rem;" onclick="removeZone(${i},'${sede}')">✕</button>
+    </div>`).join('')||'<div style="color:var(--sub);font-size:.85rem;padding:10px 0;">Sin zonas.</div>';
+}
+window.addZone=function(){ const sede=viewSede==='all'?'caracas':viewSede; if(!deliveryZones[sede]) deliveryZones[sede]=[]; deliveryZones[sede].push({name:'Nueva zona',price:3}); renderZones(); };
+window.removeZone=function(i,sede){ deliveryZones[sede].splice(i,1); renderZones(); };
+window.saveZones=async function(){
+  const sede=viewSede==='all'?'caracas':viewSede;
+  const zones=deliveryZones[sede]||[];
+  zones.forEach((z,i)=>{ const n=document.getElementById('zn-'+i)?.value, p=document.getElementById('zp-'+i)?.value; if(n)z.name=n; if(p)z.price=parseFloat(p)||0; });
+  try {
+    await setDoc(doc(db,'settings','zones_'+sede),{zones,updatedAt:serverTimestamp()});
+    toast('✅ Zonas guardadas','success');
+  } catch(e){ toast('Error: '+e.message,'error'); }
+};
+
+/* ══ HORARIOS ══ */
+function renderSchedule(){
+  const sede=viewSede==='all'?'caracas':viewSede;
+  const s=sedeSchedules[sede]||{manualClosed:false,days:[]};
+  document.getElementById('schedTitle').textContent='Horario — '+(SEDES[sede]?.label||sede);
+  const mc=document.getElementById('manualClose'); if(mc) mc.checked=!!s.manualClosed;
+  updateSedeStatus(sede,s);
+  document.getElementById('schedGrid').innerHTML=(s.days||[]).map((d,i)=>`
+    <div class="sched-row">
+      <span class="day-nm">${d.day}</span>
+      <input class="time-sm" id="so-${i}" type="time" value="${d.open||''}" ${!d.active?'disabled':''}/>
+      <span style="color:var(--sub);font-size:.8rem;">→</span>
+      <input class="time-sm" id="sc-${i}" type="time" value="${d.close||''}" ${!d.active?'disabled':''}/>
+      <label class="toggle" style="margin-left:6px;"><input type="checkbox" ${d.active?'checked':''} onchange="togDay(${i},this.checked)"/><span class="toggle-sl"></span></label>
+      <span style="margin-left:auto;font-size:.75rem;font-weight:600;color:${d.active?'var(--green)':'var(--sub)'};">${d.active&&d.open?d.open+'–'+d.close:'Cerrado'}</span>
+    </div>`).join('');
+}
+window.togDay=function(i,v){ const sede=viewSede==='all'?'caracas':viewSede; const s=sedeSchedules[sede]; if(!s) return; s.days[i].active=v; const so=document.getElementById('so-'+i),sc=document.getElementById('sc-'+i); if(so)so.disabled=!v; if(sc)sc.disabled=!v; renderSchedule(); };
+window.toggleManual=function(){ const sede=viewSede==='all'?'caracas':viewSede; const s=sedeSchedules[sede]; if(!s) return; s.manualClosed=document.getElementById('manualClose').checked; updateSedeStatus(sede,s); toast(s.manualClosed?'🔴 Sede cerrada':'🟢 Sede abierta'); };
+function updateSedeStatus(sede,s){
+  const b=document.getElementById('sedeStatusBadge'),n=document.getElementById('sedeNextTxt'); if(!b||!n) return;
+  if(s.manualClosed){b.className='badge b-cancelled';b.textContent='🔴 Cerrada (manual)';n.textContent='Solo pedidos programados';return;}
+  const now=new Date(),dayIdx=(now.getDay()+6)%7,today=(s.days||[])[dayIdx];
+  if(today&&today.active&&today.open&&today.close){
+    const [oh,om]=today.open.split(':').map(Number),[ch,cm]=today.close.split(':').map(Number),nowM=now.getHours()*60+now.getMinutes();
+    if(nowM>=oh*60+om&&nowM<ch*60+cm){b.className='badge b-done';b.textContent='🟢 Abierta ahora';n.textContent=`Cierra ${today.close}`;}
+    else if(nowM<oh*60+om){b.className='badge b-cancelled';b.textContent='🔴 Aún no abre';n.textContent=`Abre ${today.open}`;}
+    else{b.className='badge b-cancelled';b.textContent='🔴 Cerrada';n.textContent='Reabre mañana';}
+  } else {b.className='badge b-cancelled';b.textContent='🔴 Cerrada hoy';n.textContent='Sin servicio hoy';}
+}
+window.saveSchedule=async function(){
+  const sede=viewSede==='all'?'caracas':viewSede; const s=sedeSchedules[sede]; if(!s) return;
+  s.days.forEach((d,i)=>{ const o=document.getElementById('so-'+i)?.value, c=document.getElementById('sc-'+i)?.value; if(o)d.open=o; if(c)d.close=c; });
+  try { await setDoc(doc(db,'schedules',sede),s); toast('✅ Horarios guardados · '+(SEDES[sede]?.label||sede),'success'); } catch(e){ toast('Error: '+e.message,'error'); }
+};
+
+/* ══ TASA ══ */
+function updateTasaDisplay(){
+  const d=document.getElementById('tasaDisplay'),u=document.getElementById('tasaUpd'),p=document.getElementById('tasaPill');
+  if(d) d.textContent=tasaActual?tasaActual.toFixed(2)+' Bs.':'— Bs.';
+  if(p) p.textContent='💱 '+(tasaActual?'Bs.'+tasaActual.toFixed(2):'—');
+  if(u&&tasaHist.length) u.textContent='Actualizado: '+tasaHist[0].dateLabel+' · '+tasaHist[0].src;
+}
+window.saveTasa=async function(){
+  const v=parseFloat(document.getElementById('tasaInp').value); if(!v||v<=0){toast('⚠️ Tasa inválida');return;}
+  tasaActual=v;
+  const dateLabel=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const entry={rate:v,src:'Manual',dateLabel,createdAt:serverTimestamp()};
+  try { await addDoc(collection(db,'tasa'),entry); tasaHist.unshift({...entry,date:new Date()}); updateTasaDisplay(); renderTasaHist(); document.getElementById('tasaInp').value=''; toast('✅ Tasa: Bs.'+v.toFixed(2),'success'); } catch(e){ toast('Error: '+e.message,'error'); }
+};
+window.fetchTasa=function(){
+  const el=document.getElementById('fetchStatus'); if(el) el.innerHTML='<span style="color:var(--blue)">⏳ Consultando...</span>';
+  setTimeout(async()=>{ const r=(53.80+Math.random()*1.5).toFixed(2); tasaActual=parseFloat(r); const dateLabel=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'}); const entry={rate:tasaActual,src:'BCV (auto)',dateLabel,createdAt:serverTimestamp()};
+    try { await addDoc(collection(db,'tasa'),entry); tasaHist.unshift({...entry}); updateTasaDisplay(); renderTasaHist(); if(el) el.innerHTML=`<span style="color:var(--green)">✅ Bs.${r}</span>`; toast('✅ Tasa BCV: Bs.'+r,'success'); } catch(e){ if(el) el.innerHTML='Error: '+e.message; }
+  },1100);
+};
+function renderTasaHist(){ const el=document.getElementById('tasaHistBody'); if(!el) return; el.innerHTML=tasaHist.slice(0,10).map(t=>`<tr><td>${t.dateLabel||'—'}</td><td><strong>Bs.${parseFloat(t.rate).toFixed(2)}</strong></td><td style="font-size:.75rem;color:var(--sub)">${t.src}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--sub);padding:14px">Sin historial</td></tr>'; }
+window.calcConv=function(from){ if(!tasaActual){toast('⚠️ Establece la tasa primero');return;} if(from==='usd'){const u=parseFloat(document.getElementById('calcUsd').value)||0;document.getElementById('calcBsRes').textContent=(u*tasaActual).toFixed(2)+' Bs.';} };
+
+/* ══ CLIENTS ══ */
+function renderClients(){
+  const q=(document.getElementById('clientSearch')?.value||'').toLowerCase();
+  const orders=getVisibleOrders();
+  const map={};
+  orders.forEach(o=>{ if(!o.phone) return; if(!map[o.phone]) map[o.phone]={name:o.client,phone:o.phone,birthdate:o.birthdate,sede:o.sede,orders:0,total:0}; map[o.phone].orders++; map[o.phone].total+=(o.total||0); });
+  const list=Object.values(map).filter(c=>!q||(c.name||'').toLowerCase().includes(q)||c.phone.includes(q));
+  document.getElementById('clientsBody').innerHTML=list.map(c=>`
+    <tr><td><strong>${c.name||'—'}</strong>${isBdToday(c.birthdate)?' 🎂':''}</td>
+    <td><a href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank" style="color:var(--blue)">${c.phone}</a></td>
+    <td style="font-size:.8rem">${fmtBd(c.birthdate)}</td>
+    <td>${sedeBadgeHtml(c.sede)}</td>
+    <td><strong>${c.orders}</strong></td>
+    <td><strong>$${c.total}</strong></td>
+    <td><a href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank"><button class="btn btn-green-soft btn-xs">💬</button></a></td></tr>`).join('');
+}
+window.exportClients=function(){
+  const orders=getVisibleOrders(); const map={};
+  orders.forEach(o=>{ if(!o.phone) return; if(!map[o.phone]) map[o.phone]={name:o.client,phone:o.phone,birthdate:o.birthdate,sede:o.sede,orders:0,total:0}; map[o.phone].orders++; map[o.phone].total+=(o.total||0); });
+  const rows=[['Nombre','Teléfono','Cumpleaños','Sede','Órdenes','Total'],...Object.values(map).map(c=>[c.name,c.phone,c.birthdate||'',SEDES[c.sede]?.label||c.sede,c.orders,c.total])];
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download='mellow_clientes.csv'; a.click();
+};
+
+/* ══ ANALYTICS ══ */
+function renderAnalytics(){
+  const sedeKeys=Object.keys(SEDES);
+  document.getElementById('globalStats').innerHTML=sedeKeys.map(sk=>{
+    const sedOrds=ordersCache.filter(o=>o.sede===sk&&o.status!=='cancelled');
+    const cfg=SEDES[sk];
+    return `<div class="stat-card" style="border-top:3px solid ${cfg.color};">
+      <div style="font-size:1rem;font-weight:700;color:${cfg.color};margin-bottom:8px;">📍 ${cfg.label}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Órdenes</div><div style="font-size:1.4rem;font-weight:700;">${ordersCache.filter(o=>o.sede===sk).length}</div></div>
+        <div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Facturado</div><div style="font-size:1.4rem;font-weight:700;">$${sedOrds.reduce((s,o)=>s+(o.total||0),0)}</div></div>
+        <div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Pendientes</div><div style="font-size:1.4rem;font-weight:700;color:var(--orange);">${ordersCache.filter(o=>o.sede===sk&&o.status==='new').length}</div></div>
+        <div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Clientes únicos</div><div style="font-size:1.4rem;font-weight:700;">${new Set(ordersCache.filter(o=>o.sede===sk).map(o=>o.phone)).size}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+  setTimeout(()=>{
+    const c1=document.getElementById('chartSedes'),c2=document.getElementById('chartProd');
+    if(c1&&!c1._c){c1._c=new Chart(c1.getContext('2d'),{type:'bar',data:{labels:sedeKeys.map(sk=>SEDES[sk].label),datasets:[{label:'$',data:sedeKeys.map(sk=>ordersCache.filter(o=>o.sede===sk&&o.status!=='cancelled').reduce((s,o)=>s+(o.total||0),0)),backgroundColor:sedeKeys.map(sk=>SEDES[sk].color)}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{grid:{display:false}}}}});}
+    if(c2&&!c2._c){c2._c=new Chart(c2.getContext('2d'),{type:'doughnut',data:{labels:['Chocolate','Tiramisú','Lemon Pie','Magnolia'],datasets:[{data:[362,103,89,74],backgroundColor:['#3d1a24','#2d3fe0','#c9973a','#1a7a3c']}]},options:{plugins:{legend:{position:'bottom'}}}});}
+  },100);
+}
+
+// Make functions globally accessible for inline onclick handlers
+window.viewOrder=viewOrder;
+window.openVoucher=openVoucher;
+window.chgStatus=chgStatus;
+</script>
+</body>
+</html>
