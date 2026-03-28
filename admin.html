@@ -276,11 +276,11 @@ textarea{min-height:70px;resize:vertical;}
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Entrar →</button>
     <div class="login-err" id="loginErr">Usuario o contraseña incorrectos</div>
     <div class="demo-box">
-      <strong>Usuarios:</strong><br>
-      👑 owner@mellow.com · owner2025<br>
-      📍 caracas@mellow.com · ccs2025<br>
-      📍 barquisimeto@mellow.com · bqto2025<br>
-      📍 maracaibo@mellow.com · mcbo2025
+      <strong>Usuarios de demostración:</strong><br>
+      👑 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bfd0c8d1dacdffd2dad3d3d0c891dcd0d2">[email&#160;protected]</a> · owner2025<br>
+      📍 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6f0c0e1d0e0c0e1c2f020a03030018410c0002">[email&#160;protected]</a> · ccs2025<br>
+      📍 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4624273437332f352f2b233229062b232a2a29316825292b">[email&#160;protected]</a> · bqto2025<br>
+      📍 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d0bdb1a2b1b3b1b9b2bf90bdb5bcbcbfa7feb3bfbd">[email&#160;protected]</a> · mcbo2025
     </div>
   </div>
 </div>
@@ -477,8 +477,8 @@ textarea{min-height:70px;resize:vertical;}
 
       <!-- TASA -->
       <div class="page" id="page-tasa">
-        <div class="page-header"><h1>Tasa del dia</h1></div>
-        <div id="tasaOwnerOnly" style="display:none;background:var(--yellow-l);border:1.5px solid #e0c060;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:.84rem;color:var(--yellow);font-weight:600;">Solo el propietario puede editar la tasa. Aplica a todas las sedes.</div>
+        <div class="page-header"><h1>Tasa del día</h1></div>
+        <div id="tasaOwnerOnly" style="display:none;background:var(--yellow-l);border:1.5px solid #e0c060;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:.84rem;color:var(--yellow);font-weight:600;">Solo el propietario puede editar la tasa del dia. Se aplica a todas las sedes.</div>
         <div class="tasa-hero">
           <div>
             <div style="font-size:.75rem;opacity:.7;margin-bottom:4px;">Tasa actual (Bs. por $1 USD)</div>
@@ -520,7 +520,7 @@ textarea{min-height:70px;resize:vertical;}
         <div class="card" style="margin-bottom:14px;">
           <div class="card-header"><div class="card-title" id="pagosCardTitle">Pago Movil</div></div>
           <div class="card-body">
-            <p style="font-size:.82rem;color:var(--sub);margin-bottom:16px;">Estos datos se muestran al cliente cuando elige <strong>Pago Movil</strong>.</p>
+            <p style="font-size:.82rem;color:var(--sub);margin-bottom:16px;">Estos datos se muestran al cliente cuando elige Pago Movil.</p>
             <div class="field"><label>Banco</label><input type="text" id="pagoBanco" placeholder="Ej: Banesco" oninput="updatePagosPreview()"/></div>
             <div class="field"><label>Numero de celular</label><input type="tel" id="pagoCelular" placeholder="Ej: 0424-2708381" oninput="updatePagosPreview()"/></div>
             <div class="field"><label>Cedula del titular</label><input type="text" id="pagoCedula" placeholder="Ej: V-12345678" oninput="updatePagosPreview()"/></div>
@@ -545,6 +545,28 @@ textarea{min-height:70px;resize:vertical;}
         </div>
       </div>
 
+
+      <!-- PAGOS -->
+      <div class="page" id="page-pagos">
+        <div class="page-header"><h1>Datos de pago</h1><button class="btn btn-wine btn-sm" onclick="savePagos()">Guardar</button></div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-header"><div class="card-title" id="pagosCardTitle">Pago Movil</div></div>
+          <div class="card-body">
+            <p style="font-size:.82rem;color:var(--sub);margin-bottom:16px;">Estos datos se muestran al cliente cuando elige Pago Movil.</p>
+            <div class="field"><label>Banco</label><input type="text" id="pagoBanco" placeholder="Ej: Banesco" oninput="updatePagosPreview()"/></div>
+            <div class="field"><label>Numero de celular</label><input type="tel" id="pagoCelular" placeholder="Ej: 0424-2708381" oninput="updatePagosPreview()"/></div>
+            <div class="field"><label>Cedula del titular</label><input type="text" id="pagoCedula" placeholder="Ej: V-12345678" oninput="updatePagosPreview()"/></div>
+            <div style="background:var(--gray);border-radius:10px;padding:14px;margin-top:6px;">
+              <div style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:8px;">Vista previa para el cliente</div>
+              <div id="pagosPreview" style="font-size:.88rem;color:var(--text);line-height:2;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Zelle</div></div>
+          <div class="card-body"><div class="field"><label>Email o telefono Zelle</label><input type="text" id="pagoZelle" placeholder="Ej: mellowcakeshop@gmail.com"/></div></div>
+        </div>
+      </div>
       <!-- ANALYTICS -->
       <div class="page" id="page-analytics">
         <div class="page-header"><h1>Analíticas globales</h1></div>
@@ -622,7 +644,7 @@ textarea{min-height:70px;resize:vertical;}
 <div class="toast" id="toast"></div>
 
 <!-- ══════════════ FIREBASE + APP SCRIPT ══════════════ -->
-<script type="module">
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, getDocs, setDoc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
@@ -631,7 +653,7 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://w
 /* ══ FIREBASE CONFIG ══ */
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyDdCZXSoGeTQpFhWst4BuztS0rZegy1drE",
-  authDomain:        "mellow-5356f.firebaseapp.com",
+  authDomain: "mellow-5356f.firebaseapp.com",
   projectId:         "mellow-5356f",
   storageBucket:     "mellow-5356f.firebasestorage.app",
   messagingSenderId: "822351946880",
@@ -678,9 +700,9 @@ const SB = {new:'b-new',confirmed:'b-confirmed',transit:'b-transit',done:'b-done
 const PM = {zelle:'Zelle 💵',pago_movil:'Pago Móvil 📱',efectivo:'Efectivo $',combinado:'Combinado',punto:'Punto de Venta'};
 
 function isBdToday(bd){ if(!bd) return false; const t=new Date(),d=new Date(bd+'T12:00:00'); return d.getMonth()===t.getMonth()&&d.getDate()===t.getDate(); }
-function fmtBd(bd){ if(!bd) return '-'; return new Date(bd+'T12:00:00').toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric'}); }
+function fmtBd(bd){ if(!bd) return '—'; return new Date(bd+'T12:00:00').toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric'}); }
 function timeAgo(ts){
-  if(!ts) return '-';
+  if(!ts) return '—';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   const diff = Math.floor((Date.now()-d.getTime())/1000);
   if(diff<60) return diff+'s';
@@ -780,7 +802,9 @@ function initApp(){
   document.getElementById('userRole').textContent = isOwner ? 'Propietario' : sedeCfg.label;
 
   document.getElementById('sedeSwitcher').style.display = isOwner ? 'flex' : 'none';
-  document.getElementById('navAnalytics').style.display  = isOwner ? 'flex' : 'none';
+  document.getElementById('navAnalytics').style.display=isOwner?'flex':'none';
+  var tow=document.getElementById('tasaOwnerOnly'); if(tow) tow.style.display=isOwner?'none':'block';
+  var tinp=document.getElementById('tasaInp'); if(tinp&&!isOwner){tinp.disabled=true;tinp.style.opacity='.5';}
 
   setFbStatus('online');
   subscribeToOrders();
@@ -868,16 +892,29 @@ async function loadTasa(){
 
 /* ══ FIRESTORE: SCHEDULES ══ */
 async function loadSchedules(){
-  try{ var snap=await getDocs(collection(db,'schedules')); snap.docs.forEach(function(d){ sedeSchedules[d.id]=d.data(); }); }catch(e){ console.log('No schedules'); }
+  try {
+    const snap = await getDocs(collection(db,'schedules'));
+    snap.docs.forEach(d=>{ sedeSchedules[d.id]=d.data(); });
+  } catch(e){ console.log('No schedules yet'); }
   initDefaultSchedules();
   renderSchedule();
 }
 
 function getDefaultDays(){
-  return [{day:'Lunes',open:'13:30',close:'22:00',active:false},{day:'Martes',open:'13:30',close:'22:00',active:true},{day:'Miercoles',open:'13:30',close:'22:00',active:true},{day:'Jueves',open:'13:30',close:'22:00',active:true},{day:'Viernes',open:'13:30',close:'22:00',active:true},{day:'Sabado',open:'13:30',close:'22:00',active:true},{day:'Domingo',open:'13:30',close:'22:00',active:true}];
+  return [
+    {day:'Lunes',open:'13:30',close:'22:00',active:false},
+    {day:'Martes',open:'13:30',close:'22:00',active:true},
+    {day:'Miercoles',open:'13:30',close:'22:00',active:true},
+    {day:'Jueves',open:'13:30',close:'22:00',active:true},
+    {day:'Viernes',open:'13:30',close:'22:00',active:true},
+    {day:'Sabado',open:'13:30',close:'22:00',active:true},
+    {day:'Domingo',open:'13:30',close:'22:00',active:true}
+  ];
 }
 function initDefaultSchedules(){
-  Object.keys(SEDES).forEach(function(sk){ if(!sedeSchedules[sk]) sedeSchedules[sk]={manualClosed:false,days:getDefaultDays()}; });
+  Object.keys(SEDES).forEach(function(sk){
+    if(!sedeSchedules[sk]) sedeSchedules[sk]={manualClosed:false,days:getDefaultDays()};
+  });
 }
 
 /* ══ DASHBOARD ══ */
@@ -1378,7 +1415,7 @@ window.saveSchedule=async function(){
 /* ══ TASA ══ */
 function updateTasaDisplay(){
   const d=document.getElementById('tasaDisplay'),u=document.getElementById('tasaUpd'),p=document.getElementById('tasaPill');
-  if(d) d.textContent=tasaActual?tasaActual.toFixed(2)+' Bs.':'-';
+  if(d) d.textContent=tasaActual?tasaActual.toFixed(2)+' Bs.':'— Bs.';
   if(p) p.textContent='💱 '+(tasaActual?'Bs.'+tasaActual.toFixed(2):'—');
   if(u&&tasaHist.length) u.textContent='Actualizado: '+tasaHist[0].dateLabel+' · '+tasaHist[0].src;
 }
@@ -1426,7 +1463,7 @@ window.exportClients=function(){
 
 /* ══ ANALYTICS ══ */
 
-/* ══ PAGOS CONFIG ══ */
+/* == PAGOS == */
 async function loadPagos(){
   var sede=viewSede==='all'?'caracas':viewSede;
   try{
@@ -1450,35 +1487,60 @@ function updatePagosPreview(){
 }
 window.savePagos=async function(){
   var sede=viewSede==='all'?'caracas':viewSede;
-  var data={
-    banco:(document.getElementById('pagoBanco')&&document.getElementById('pagoBanco').value.trim())||'',
-    celular:(document.getElementById('pagoCelular')&&document.getElementById('pagoCelular').value.trim())||'',
-    cedula:(document.getElementById('pagoCedula')&&document.getElementById('pagoCedula').value.trim())||'',
-    zelle:(document.getElementById('pagoZelle')&&document.getElementById('pagoZelle').value.trim())||'',
-    updatedAt:serverTimestamp()
-  };
+  var data={banco:document.getElementById('pagoBanco').value.trim(),celular:document.getElementById('pagoCelular').value.trim(),cedula:document.getElementById('pagoCedula').value.trim(),zelle:document.getElementById('pagoZelle').value.trim(),updatedAt:serverTimestamp()};
   try{ await setDoc(doc(db,'settings','pagos_'+sede),data); toast('Datos de pago guardados','success'); }catch(e){ toast('Error: '+e.message,'error'); }
 };
 window.updatePagosPreview=updatePagosPreview;
 function renderAnalytics(){
-  const sedeKeys=Object.keys(SEDES);
-  document.getElementById('globalStats').innerHTML=sedeKeys.map(sk=>{
-    const sedOrds=ordersCache.filter(o=>o.sede===sk&&o.status!=='cancelled');
-    const cfg=SEDES[sk];
-    return `<div class="stat-card" style="border-top:3px solid ${cfg.color};">
-      <div style="font-size:1rem;font-weight:700;color:${cfg.color};margin-bottom:8px;">📍 ${cfg.label}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Órdenes</div><div style="font-size:1.4rem;font-weight:700;">${ordersCache.filter(o=>o.sede===sk).length}</div></div>
-        <div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Facturado</div><div style="font-size:1.4rem;font-weight:700;">$${sedOrds.reduce((s,o)=>s+(o.total||0),0)}</div></div>
-        <div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Pendientes</div><div style="font-size:1.4rem;font-weight:700;color:var(--orange);">${ordersCache.filter(o=>o.sede===sk&&o.status==='new').length}</div></div>
-        <div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Clientes únicos</div><div style="font-size:1.4rem;font-weight:700;">${new Set(ordersCache.filter(o=>o.sede===sk).map(o=>o.phone)).size}</div></div>
-      </div>
-    </div>`;
-  }).join('');
-  setTimeout(()=>{
-    const c1=document.getElementById('chartSedes'),c2=document.getElementById('chartProd');
-    if(c1&&!c1._c){c1._c=new Chart(c1.getContext('2d'),{type:'bar',data:{labels:sedeKeys.map(sk=>SEDES[sk].label),datasets:[{label:'$',data:sedeKeys.map(sk=>ordersCache.filter(o=>o.sede===sk&&o.status!=='cancelled').reduce((s,o)=>s+(o.total||0),0)),backgroundColor:sedeKeys.map(
-</script>
+  var sedeKeys = Object.keys(SEDES);
+  var html = '';
+  sedeKeys.forEach(function(sk){
+    var cfg = SEDES[sk];
+    var sedOrds = ordersCache.filter(function(o){ return o.sede===sk && o.status!=='cancelled'; });
+    var total = sedOrds.reduce(function(s,o){ return s+(o.total||0); }, 0);
+    var pending = ordersCache.filter(function(o){ return o.sede===sk && o.status==='new'; }).length;
+    var allOrds = ordersCache.filter(function(o){ return o.sede===sk; }).length;
+    var uniqueClients = new Set(ordersCache.filter(function(o){ return o.sede===sk; }).map(function(o){ return o.phone; })).size;
+    html += '<div class="stat-card" style="border-top:3px solid '+cfg.color+';">';
+    html += '<div style="font-size:1rem;font-weight:700;color:'+cfg.color+';margin-bottom:8px;">📍 '+cfg.label+'</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+    html += '<div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Ordenes</div><div style="font-size:1.4rem;font-weight:700;">'+allOrds+'</div></div>';
+    html += '<div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Facturado</div><div style="font-size:1.4rem;font-weight:700;">$'+total+'</div></div>';
+    html += '<div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Pendientes</div><div style="font-size:1.4rem;font-weight:700;color:var(--orange);">'+pending+'</div></div>';
+    html += '<div><div style="font-size:.65rem;text-transform:uppercase;color:var(--sub);font-weight:700;">Clientes</div><div style="font-size:1.4rem;font-weight:700;">'+uniqueClients+'</div></div>';
+    html += '</div></div>';
+  });
+  document.getElementById('globalStats').innerHTML = html;
+  setTimeout(function(){
+    var c1=document.getElementById('chartSedes');
+    var c2=document.getElementById('chartProd');
+    if(c1&&!c1._c){
+      c1._c=new Chart(c1.getContext('2d'),{
+        type:'bar',
+        data:{
+          labels:sedeKeys.map(function(sk){ return SEDES[sk].label; }),
+          datasets:[{
+            label:'$',
+            data:sedeKeys.map(function(sk){ return ordersCache.filter(function(o){ return o.sede===sk&&o.status!=='cancelled'; }).reduce(function(s,o){ return s+(o.total||0); },0); }),
+            backgroundColor:sedeKeys.map(function(sk){ return SEDES[sk].color; })
+          }]
+        },
+        options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{grid:{display:false}}}}
+      });
+    }
+    if(c2&&!c2._c){
+      c2._c=new Chart(c2.getContext('2d'),{
+        type:'doughnut',
+        data:{
+          labels:['Chocolate','Tiramisu','Lemon Pie','Magnolia'],
+          datasets:[{data:[362,103,89,74],backgroundColor:['#3d1a24','#2d3fe0','#c9973a','#1a7a3c']}]
+        },
+        options:{plugins:{legend:{position:'bottom'}}}
+      });
+    }
+  },100);
+}
 
+</script>
 </body>
 </html>
