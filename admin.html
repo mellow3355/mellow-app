@@ -1399,19 +1399,37 @@ function renderMotorizados(){
     <td><span class="badge ${SB[o.status]||'b-new'}">${SL[o.status]||'—'}</span></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--sub)">Sin entregas</td></tr>';
 }
 
-window.addMoto = function(){
-  const sede=viewSede==='all'?'caracas':viewSede;
-  const name=prompt('Nombre del motorizado:'); if(!name) return;
-  const phone=prompt('Teléfono WhatsApp (+58...):');
-  const cols=['#2a5c9a','#1a7a3c','#8b3a8b','#c75000'];
-  if(!sedeMotorizados[sede]) sedeMotorizados[sede]=[];
-  sedeMotorizados[sede].push({id:'m'+Date.now(),name:name.trim(),phone:phone||'',color:cols[sedeMotorizados[sede].length%cols.length],deliveries:0});
-  renderMotorizados(); toast('✅ Motorizado agregado');
+window.addMoto = async function(){
+  const sede = viewSede==='all' ? 'caracas' : viewSede;
+  const name = prompt('Nombre del motorizado:'); if(!name||!name.trim()) return;
+  const phone = prompt('Teléfono WhatsApp (ej: +584121234567):'); if(!phone||!phone.trim()) return;
+  const cols = ['#2a5c9a','#1a7a3c','#8b3a8b','#c75000','#856404','#7b2d8b'];
+  const color = cols[(sedeMotorizados[sede]||[]).length % cols.length];
+  const motoData = {
+    name: name.trim(),
+    phone: phone.trim(),
+    color: color,
+    sede: sede,
+    deliveries: 0,
+    createdAt: serverTimestamp(),
+  };
+  try {
+    const ref = await addDoc(collection(db,'motorizados'), motoData);
+    if(!sedeMotorizados[sede]) sedeMotorizados[sede] = [];
+    sedeMotorizados[sede].push(Object.assign({id:ref.id}, motoData));
+    renderMotorizados();
+    toast('✅ Motorizado guardado en Firebase', 'success');
+  } catch(e){ toast('Error: '+e.message, 'error'); }
 };
-window.delMoto = function(id,sede){
-  if(!confirm('¿Eliminar?')) return;
-  sedeMotorizados[sede]=sedeMotorizados[sede].filter(m=>m.id!==id);
-  renderMotorizados(); toast('🗑 Eliminado');
+
+window.delMoto = async function(id, sede){
+  if(!confirm('¿Eliminar este motorizado?')) return;
+  try {
+    await deleteDoc(doc(db,'motorizados',id));
+    sedeMotorizados[sede] = (sedeMotorizados[sede]||[]).filter(m=>m.id!==id);
+    renderMotorizados();
+    toast('🗑 Motorizado eliminado', 'success');
+  } catch(e){ toast('Error: '+e.message, 'error'); }
 };
 
 /* ══ DELIVERY ZONES ══ */
