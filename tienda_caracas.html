@@ -480,6 +480,7 @@ footer{background:#110d06;padding:36px 20px 28px;text-align:center;border-top:1p
 <script type="module">
 /* ══ CONFIG ══ */
 const OWNER_WA = '584242708381';
+const SEDE_KEY = 'caracas';
 const VALID_COUPONS = {'MELLOW10':10,'PRIMERAVEZ':15};
 const PAY_DATA = {
   zelle:'Zelle: <b>mellowcakeshop@gmail.com</b>',
@@ -508,47 +509,111 @@ function getTodayStr(){
   const d=new Date(); return d.toISOString().split('T')[0];
 }
 
+// Sede schedule loaded from Firebase
+let sedeSchedule = null;
+
+async function loadSedeSchedule(){
+  try {
+    const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    const snap = await getDoc(doc(db, 'schedules', SEDE_KEY));
+    if(snap.exists()){
+      sedeSchedule = snap.data();
+    }
+  } catch(e){ console.log('No schedule in Firebase, using defaults'); }
+}
+
+function getSedeHours(dateStr){
+  // Day index: 0=Monday ... 6=Sunday (matches admin schedule array)
+  const d = new Date(dateStr + 'T12:00:00');
+  const jsDay = d.getDay(); // 0=Sun, 1=Mon...6=Sat
+  const idx = jsDay === 0 ? 6 : jsDay - 1; // convert to Mon=0...Sun=6
+
+  if(sedeSchedule && sedeSchedule.days && sedeSchedule.days[idx]){
+    const day = sedeSchedule.days[idx];
+    if(!day.active || !day.open || !day.close) return null; // closed
+    return { open: day.open, close: day.close };
+  }
+  // Fallback defaults per sede
+  const defaults = {
+    'caracas':      { open: '12:00', close: '22:00' },
+    'barquisimeto': { open: '10:00', close: '19:00' },
+    'maracaibo':    { open: '10:00', close: '19:00' },
+  };
+  return defaults[SEDE_KEY] || { open: '10:00', close: '19:00' };
+}
+
 function getMinDate(){
-  // Today is always valid; they just can't select past times if today
   return getTodayStr();
 }
 
-function generateTimeSlots(dateStr){
-  const slots=[];
-  const now=new Date();
-  const selected=new Date(dateStr+'T00:00:00');
-  const isToday=dateStr===getTodayStr();
+function getMaxDate(){
+  // Max 7 days from today
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return d.toISOString().split('T')[0];
+}
 
-  // Business hours 10:00 - 19:00, slots every 30 min
-  for(let h=10;h<19;h++){
-    for(let m=0;m<60;m+=30){
-      const slotTime=new Date(dateStr+'T'+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':00');
-      // If today, only show times at least 1 hour from now
+function generateTimeSlots(dateStr){
+  const slots = [];
+  const now = new Date();
+  const isToday = dateStr === getTodayStr();
+  const hours = getSedeHours(dateStr);
+
+  if(!hours) return []; // closed that day
+
+  const [openH, openM] = hours.open.split(':').map(Number);
+  const [closeH, closeM] = hours.close.split(':').map(Number);
+
+  for(let h = openH; h <= closeH; h++){
+    for(let m = 0; m < 60; m += 30){
+      // Don't go past closing time
+      if(h === closeH && m >= closeM) break;
+      // Don't start before opening time
+      if(h === openH && m < openM) continue;
+
+      const slotTime = new Date(dateStr + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
+      // If today, require at least 1 hour advance
       if(isToday){
-        const cutoff=new Date(now.getTime()+60*60*1000); // 1hr buffer
-        if(slotTime<=cutoff) continue;
+        const cutoff = new Date(now.getTime() + 60 * 60 * 1000);
+        if(slotTime <= cutoff) continue;
       }
-      slots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+      slots.push(String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0'));
     }
   }
   return slots;
 }
 
+function isDateAvailable(dateStr){
+  const hours = getSedeHours(dateStr);
+  if(!hours) return false;
+  const slots = generateTimeSlots(dateStr);
+  return slots.length > 0;
+}
+
 function populateTimeSelect(selectEl, dateStr){
-  selectEl.innerHTML='<option value="">Selecciona hora</option>';
-  if(!dateStr){selectEl.disabled=true;return;}
-  const slots=generateTimeSlots(dateStr);
-  if(slots.length===0){
-    selectEl.innerHTML='<option value="">No hay horarios disponibles hoy</option>';
-    selectEl.disabled=true;
+  selectEl.innerHTML = '<option value="">Selecciona hora</option>';
+  if(!dateStr){ selectEl.disabled = true; return; }
+
+  const hours = getSedeHours(dateStr);
+  if(!hours){
+    selectEl.innerHTML = '<option value="">Cerrado este dia</option>';
+    selectEl.disabled = true;
     return;
   }
-  slots.forEach(t=>{
-    const opt=document.createElement('option');
-    opt.value=t; opt.textContent=t;
+
+  const slots = generateTimeSlots(dateStr);
+  if(slots.length === 0){
+    selectEl.innerHTML = '<option value="">Sin horarios disponibles</option>';
+    selectEl.disabled = true;
+    return;
+  }
+  slots.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
     selectEl.appendChild(opt);
   });
-  selectEl.disabled=false;
+  selectEl.disabled = false;
 }
 
 /* ══ PRODUCT RENDERING ══ */
@@ -605,6 +670,7 @@ function openProduct(id){
   const dateEl=document.getElementById('modalDate');
   const timeEl=document.getElementById('modalTime');
   dateEl.min=getMinDate();
+  dateEl.max=getMaxDate();
   dateEl.value='';
   timeEl.innerHTML='<option value="">Selecciona hora</option>';
   timeEl.disabled=true;
@@ -719,6 +785,7 @@ function startCheckout(){
   document.getElementById('deliverySection').style.display=deliveryMode==='delivery'?'block':'none';
   // Set min date on co date picker
   document.getElementById('coDeliveryDate').min=getMinDate();
+  document.getElementById('coDeliveryDate').max=getMaxDate();
   document.getElementById('coDeliveryDate').value='';
   document.getElementById('coDeliveryTime').innerHTML='<option value="">Selecciona hora</option>';
   document.getElementById('coDeliveryTime').disabled=true;
@@ -900,7 +967,7 @@ async function loadFirebaseProducts(){
           price:     data.price || 0,
           img:       data.img || '',
           available: data.available !== undefined ? data.available : true,
-          stock:     data.stock !== undefined ? data.stock : undefined,
+          stock:     data['stock_' + SEDE_KEY] !== undefined ? data['stock_' + SEDE_KEY] : (data.stock !== undefined ? data.stock : undefined),
           cat:       data.cat || '',
           order:     data.order || 0,
         });
@@ -918,6 +985,7 @@ async function loadFirebaseProducts(){
       '<div style="text-align:center;padding:40px;color:var(--sub);grid-column:1/-1;">Error cargando productos. Recarga la página.</div>';
   }
 }
+loadSedeSchedule();
 loadFirebaseProducts();
 
 /* COMPLETE ORDER */
@@ -1039,6 +1107,8 @@ function resetAll(){
 
 /* ══ EXPOSE FUNCTIONS TO HTML onclick handlers ══ */
 window.openProduct = openProduct;
+window.getMaxDate = getMaxDate;
+window.isDateAvailable = isDateAvailable;
 window.addToCart = addToCart;
 window.closeModalDirect = closeModalDirect;
 window.closeModalBg = closeModalBg;

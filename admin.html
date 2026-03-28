@@ -579,7 +579,7 @@ textarea{min-height:70px;resize:vertical;}
       <div class="field"><label>Descripción</label><textarea id="epDesc" placeholder="Ingredientes y características..."></textarea></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="field"><label>Precio (USD $)</label><input type="number" id="epPrice" step="0.5" placeholder="0.00"/></div>
-        <div class="field"><label>Stock disponible</label><input type="number" id="epStock" min="0" placeholder="Ej: 10"/></div>
+        <div class="field"><label id="stockLabel">Stock disponible</label><input type="number" id="epStock" min="0" placeholder="Ej: 10"/></div>
       </div>
       <div class="field"><label>Categoría</label><select id="epCat"><option>Cake Box</option><option>Drinks</option><option>Especiales</option></select></div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
@@ -1149,11 +1149,15 @@ window.editProduct = function(id){
   editingProdId=id; pendingProdImgFile=null;
   const p=productsCache.find(x=>x.id===id); if(!p) return;
   document.getElementById('prodModalTitle').textContent='Editar producto';
+  const editSedeName = SEDES[viewSede==='all'?'caracas':viewSede]?.label || 'esta sede';
+  const lbl = document.getElementById('stockLabel');
+  if(lbl) lbl.textContent = 'Stock - ' + editSedeName;
   document.getElementById('deleteProdBtn').style.display='flex';
   document.getElementById('epName').value=p.name||'';
   document.getElementById('epDesc').value=p.desc||'';
   document.getElementById('epPrice').value=p.price||0;
-  document.getElementById('epStock').value=p.stock||0;
+  const editSede = viewSede === 'all' ? 'caracas' : viewSede;
+  document.getElementById('epStock').value = p['stock_' + editSede] !== undefined ? p['stock_' + editSede] : (p.stock||0);
   document.getElementById('epCat').value=p.cat||'Cake Box';
   document.getElementById('epAvailable').checked=!!p.available;
   if(p.img){ document.getElementById('prodImgPreview').src=p.img; document.getElementById('prodImgPreview').style.display='block'; document.getElementById('prodImgPlaceholder').style.display='none'; }
@@ -1173,10 +1177,12 @@ window.saveProduct = async function(){
   const data={
     name, desc:document.getElementById('epDesc').value.trim(),
     price:parseFloat(document.getElementById('epPrice').value)||0,
-    stock:parseInt(document.getElementById('epStock').value)||0,
     cat:document.getElementById('epCat').value,
     available:document.getElementById('epAvailable').checked,
   };
+  // Save stock for the current active sede
+  const activeSede2 = viewSede === 'all' ? 'caracas' : viewSede;
+  data['stock_' + activeSede2] = parseInt(document.getElementById('epStock').value)||0;
   try {
     if(pendingProdImgFile){
       const imgRef=ref(storage,`products/${Date.now()}_${pendingProdImgFile.name}`);
