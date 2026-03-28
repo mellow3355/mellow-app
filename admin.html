@@ -1108,7 +1108,7 @@ window.viewOrder = function(id){
 
   const f=document.getElementById('oModalFooter'); f.innerHTML='';
   if(o.status==='new') f.innerHTML+=`<button class="btn btn-green-soft btn-sm" onclick="chgStatus('${o.id}','confirmed');closeModal('orderModal')">✅ Confirmar pago</button>`;
-  if(o.status==='confirmed') f.innerHTML+=`<button class="btn btn-orange-soft btn-sm" onclick="closeModal('orderModal');openMotoAssignInline('${o.id}')">🛵 Asignar motorizado</button>`;
+  if(o.status==='confirmed') f.innerHTML+=`<button class="btn btn-orange-soft btn-sm" onclick="openMotoAssignInline('${o.id}')">🛵 Asignar motorizado</button>`;
   if(o.status==='transit') f.innerHTML+=`<button class="btn btn-blue-soft btn-sm" onclick="chgStatus('${o.id}','done');closeModal('orderModal')">🏁 Finalizar</button>`;
   if(['new','confirmed'].includes(o.status)) f.innerHTML+=`<button class="btn btn-red-soft btn-sm" onclick="chgStatus('${o.id}','cancelled');closeModal('orderModal')">✕ Cancelar</button>`;
   f.innerHTML+=`<button class="btn btn-outline btn-sm" onclick="closeModal('orderModal')">Cerrar</button>`;
@@ -1160,6 +1160,8 @@ let assignOrdId2=null, selMotoId=null;
 window.openMotoAssignInline = async function(ordId){
   assignOrdId2=ordId; selMotoId=null;
   const o=ordersCache.find(x=>x.id===ordId); if(!o) return;
+  // Make sure modal is open
+  openModal('orderModal');
   await loadMotorizados();
   const motos=sedeMotorizados[o.sede]||[];
   document.getElementById('oModalTitle').textContent='Asignar motorizado · #'+(o.orderNumber||o.id.slice(-6));
