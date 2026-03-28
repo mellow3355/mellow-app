@@ -951,7 +951,7 @@ function renderDashboard(){
 
   document.getElementById('dashTable').innerHTML=orders.slice(0,10).map(o=>`
     <tr style="cursor:pointer;" onclick="viewOrder('${o.id}')">
-      <td><strong style="color:var(--blue)">#${o.id?.slice(-6)||'—'}</strong></td>
+      <td><strong style="color:var(--blue)">#${o.orderNumber||o.id?.slice(-6)||'—'}</strong></td>
       <td>${sedeBadgeHtml(o.sede)}</td>
       <td><strong>${o.client||'—'}</strong>${isBdToday(o.birthdate)?' 🎂':''}</td>
       <td style="font-size:.76rem;color:var(--sub)">${(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—'}${o.vela?' 🕯️':''}${o.nota?' 📝':''}</td>
@@ -983,7 +983,7 @@ function renderOrders(){
         : '<span class="no-voucher">Sin comp.</span>';
 
     return `<tr style="cursor:pointer;" onclick="viewOrder('${o.id}')">
-      <td><strong style="color:var(--blue)">#${(o.id||'').slice(-6)}</strong></td>
+      <td><strong style="color:var(--blue)">#${o.orderNumber||(o.id||'').slice(-6)}</strong></td>
       <td>${sedeBadgeHtml(o.sede)}</td>
       <td>${timeAgoBadge(o.createdAt,o.status)||'—'}</td>
       <td><strong>${o.client||'—'}</strong>${isBdToday(o.birthdate)?' 🎂':''}</td>
@@ -1036,7 +1036,7 @@ window.viewOrder = function(id){
   const curIdx=steps.findIndex(s=>s.k===o.status);
   const itemsStr=(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—';
 
-  document.getElementById('oModalTitle').innerHTML=`Orden #${(o.id||'').slice(-6)} ${sedeBadgeHtml(o.sede)}`;
+  document.getElementById('oModalTitle').innerHTML='Orden #'+(o.orderNumber||(o.id||'').slice(-6))+' '+sedeBadgeHtml(o.sede);
   document.getElementById('oModalBody').innerHTML=`
     ${bdToday?`<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="font-size:1.2rem;">🎂</span><div style="font-weight:700;color:#b8860b;font-size:.88rem;">¡Hoy cumpleaños de ${(o.client||'').split(' ')[0]}!</div></div>`:''}
     ${o.status==='cancelled'?`<div style="background:var(--red-l);border-radius:8px;padding:10px 14px;font-size:.84rem;font-weight:700;color:var(--red);margin-bottom:12px;">❌ Orden cancelada</div>`:

@@ -1123,11 +1123,18 @@ async function completeOrder(){
   let voucherUrl = '';
   if(voucherB64 && voucherB64 !== 'pdf' && voucherName){
     try {
+      console.log('Uploading voucher:', voucherName);
       const blob = await fetch(voucherB64).then(r=>r.blob());
-      const fileRef = storageRef(storage, `vouchers/${Date.now()}_${voucherName}`);
-      await uploadBytes(fileRef, blob);
-      voucherUrl = await getDownloadURL(fileRef);
-    } catch(e){ console.error('Voucher upload error:', e); }
+      const safeName = voucherName.replace(/[^a-zA-Z0-9._-]/g,'_');
+      const fileRef = storageRef(storage, 'vouchers/' + Date.now() + '_' + safeName);
+      const uploadSnap = await uploadBytes(fileRef, blob);
+      voucherUrl = await getDownloadURL(uploadSnap.ref);
+      console.log('Voucher uploaded:', voucherUrl);
+    } catch(e){
+      console.error('Voucher upload error:', e.message);
+      // Continue without voucher rather than blocking the order
+      voucherUrl = '';
+    }
   }
 
   // Build order object for Firestore
@@ -1158,6 +1165,18 @@ async function completeOrder(){
   };
 
   try {
+    // Get sequential order number
+    var orderNumber = 1;
+    try {
+      var counterRef = doc(db, 'settings', 'orderCounter');
+      var counterSnap = await getDoc(counterRef);
+      if(counterSnap.exists()){
+        orderNumber = (counterSnap.data().count || 0) + 1;
+      }
+      await setDoc(counterRef, { count: orderNumber }, { merge: true });
+      orderData.orderNumber = orderNumber;
+    } catch(numErr){ console.log('Order counter error:', numErr.message); }
+
     // Save to Firestore
     await addDoc(collection(db,'orders'), orderData);
 
