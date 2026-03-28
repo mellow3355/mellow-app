@@ -839,7 +839,7 @@ window.nav = function(name){
   if(name==='orders') renderOrders();
   if(name==='dashboard') renderDashboard();
   if(name==='store') renderStoreEditor();
-  if(name==='motorizados') renderMotorizados();
+  if(name==='motorizados'){ loadMotorizados().then(()=>renderMotorizados()); }
   if(name==='delivery') renderZones();
   if(name==='pagos'){ loadPagos(); var pt=document.getElementById('pagosCardTitle'); if(pt){ var sk=viewSede==='all'?'caracas':viewSede; pt.textContent='Pago Movil - '+((SEDES[sk]&&SEDES[sk].label)||sk); } }
   if(name==='horarios') renderSchedule();
@@ -858,13 +858,6 @@ window.ownerSwitch = function(sede, el){
 };
 
 /* ══ FIRESTORE: ORDERS REALTIME ══ */
-function ordNum(o){
-  if(o.orderNumber) return '#'+o.orderNumber;
-  // Find position in cache as fallback
-  var idx = ordersCache.findIndex(function(x){ return x.id===o.id; });
-  return idx>=0 ? '#'+(ordersCache.length-idx) : '#?';
-}
-
 function subscribeToOrders(){
   if(unsubOrders) unsubOrders();
   // Use simple query without composite index requirement
@@ -959,7 +952,7 @@ function renderDashboard(){
 
   document.getElementById('dashTable').innerHTML=orders.slice(0,10).map(o=>`
     <tr style="cursor:pointer;" onclick="viewOrder('${o.id}')">
-      <td><strong style="color:var(--blue)">#${ordNum(o).replace('#','')||'—'}</strong></td>
+      <td><strong style="color:var(--blue)">#${o.id?.slice(-6)||'—'}</strong></td>
       <td>${sedeBadgeHtml(o.sede)}</td>
       <td><strong>${o.client||'—'}</strong>${isBdToday(o.birthdate)?' 🎂':''}</td>
       <td style="font-size:.76rem;color:var(--sub)">${(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—'}${o.vela?' 🕯️':''}${o.nota?' 📝':''}</td>
@@ -991,7 +984,7 @@ function renderOrders(){
         : '<span class="no-voucher">Sin comp.</span>';
 
     return `<tr style="cursor:pointer;" onclick="viewOrder('${o.id}')">
-      <td><strong style="color:var(--blue)">${ordNum(o)}</strong></td>
+      <td><strong style="color:var(--blue)">#${(o.id||'').slice(-6)}</strong></td>
       <td>${sedeBadgeHtml(o.sede)}</td>
       <td>${timeAgoBadge(o.createdAt,o.status)||'—'}</td>
       <td><strong>${o.client||'—'}</strong>${isBdToday(o.birthdate)?' 🎂':''}</td>
@@ -1021,34 +1014,27 @@ window.chgStatus = async function(id, newStatus){
     await updateDoc(doc(db,'orders',id), { status: newStatus, updatedAt: serverTimestamp() });
     const o = ordersCache.find(x=>x.id===id); if(!o) return;
     o.status = newStatus;
-
-    // Update client doc with new status + move to pastOrders if done/cancelled
     try {
-      var clientId = (o.phone||'').replace(/[^0-9]/g,'');
-      if(clientId){
-        var cSnap = await getDoc(doc(db,'clients',clientId));
-        if(cSnap.exists()){
-          var cdata = cSnap.data();
-          var cupdate = {};
-          cupdate['activeOrderSummary.status'] = newStatus;
+      const cid = (o.phone||'').replace(/[^0-9]/g,'');
+      if(cid){
+        const cs = await getDoc(doc(db,'clients',cid));
+        if(cs.exists()){
+          const cd = cs.data();
+          const upd = {'activeOrderSummary.status': newStatus};
           if(newStatus==='done'||newStatus==='cancelled'){
-            cupdate.hasActiveOrder = false;
-            var act = cdata.activeOrderSummary;
-            if(act && act.orderId){
+            upd.hasActiveOrder = false;
+            const act = cd.activeOrderSummary;
+            if(act && (act.orderId||act.items)){
               act.status = newStatus;
-              var plist = cdata.pastOrders || [];
-              if(!plist.some(function(p){ return p.orderId===act.orderId; })){
-                cupdate.pastOrders = [act].concat(plist).slice(0,20);
-              }
+              const pl = cd.pastOrders||[];
+              const dup = act.orderId ? pl.some(p=>p.orderId===act.orderId) : false;
+              if(!dup) upd.pastOrders = [act].concat(pl).slice(0,20);
             }
           }
-          if(o.motoName && newStatus==='transit'){
-            cupdate['activeOrderSummary.motoName'] = o.motoName;
-          }
-          await updateDoc(doc(db,'clients',clientId), cupdate);
+          await updateDoc(doc(db,'clients',cid), upd);
         }
       }
-    } catch(ce){ console.log('Client status update:', ce.message); }
+    } catch(ce){ console.log('Client update:', ce.message); }
     const sedeWa = SEDES[o.sede]?.wa || '584242708381';
 
     if(newStatus==='confirmed'){
@@ -1072,7 +1058,7 @@ window.viewOrder = function(id){
   const curIdx=steps.findIndex(s=>s.k===o.status);
   const itemsStr=(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—';
 
-  document.getElementById('oModalTitle').innerHTML=`Orden ${ordNum(o)} ${sedeBadgeHtml(o.sede)}`;
+  document.getElementById('oModalTitle').innerHTML=`Orden #${(o.id||'').slice(-6)} ${sedeBadgeHtml(o.sede)}`;
   document.getElementById('oModalBody').innerHTML=`
     ${bdToday?`<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="font-size:1.2rem;">🎂</span><div style="font-weight:700;color:#b8860b;font-size:.88rem;">¡Hoy cumpleaños de ${(o.client||'').split(' ')[0]}!</div></div>`:''}
     ${o.status==='cancelled'?`<div style="background:var(--red-l);border-radius:8px;padding:10px 14px;font-size:.84rem;font-weight:700;color:var(--red);margin-bottom:12px;">❌ Orden cancelada</div>`:
@@ -1119,7 +1105,7 @@ window.viewOrder = function(id){
 window.openVoucher = function(ordId){
   voucherOrdId=ordId;
   const o=ordersCache.find(x=>x.id===ordId); if(!o) return;
-  document.getElementById('voucherTitle').textContent=`Comprobante · ${ordNum(o)}`;
+  document.getElementById('voucherTitle').textContent=`Comprobante · #${(o.id||'').slice(-6)}`;
   const img=document.getElementById('voucherImgFull'), noImg=document.getElementById('voucherNoImg');
   if(o.voucherUrl){ img.src=o.voucherUrl; img.style.display='block'; noImg.style.display='none'; }
   else { img.style.display='none'; noImg.style.display='block'; }
@@ -1138,40 +1124,30 @@ window.confirmFromVoucher = function(){ if(voucherOrdId){ chgStatus(voucherOrdId
 
 /* ══ MOTO ASSIGN ══ */
 let sedeMotorizados = { caracas:[], barquisimeto:[], maracaibo:[] };
-
 async function loadMotorizados(){
   try {
     const snap = await getDocs(collection(db,'motorizados'));
-    // Reset
-    Object.keys(sedeMotorizados).forEach(k => sedeMotorizados[k] = []);
+    Object.keys(sedeMotorizados).forEach(k => sedeMotorizados[k]=[]);
     snap.docs.forEach(d => {
       const m = Object.assign({id:d.id}, d.data());
-      const sede = m.sede || 'caracas';
-      if(!sedeMotorizados[sede]) sedeMotorizados[sede] = [];
-      if(!m.deliveries) m.deliveries = 0;
-      sedeMotorizados[sede].push(m);
+      const s = m.sede||'caracas';
+      if(!sedeMotorizados[s]) sedeMotorizados[s]=[];
+      if(!m.deliveries) m.deliveries=0;
+      sedeMotorizados[s].push(m);
     });
-  } catch(e) {
-    console.log('loadMotorizados error:', e.message);
-  }
+  } catch(e){ console.log('loadMotorizados:',e.message); }
 }
 let assignOrdId2=null, selMotoId=null;
 
 window.openMotoAssignInline = async function(ordId){
   assignOrdId2=ordId; selMotoId=null;
   const o=ordersCache.find(x=>x.id===ordId); if(!o) return;
-  // Make sure modal is open
   openModal('orderModal');
   await loadMotorizados();
   const motos=sedeMotorizados[o.sede]||[];
-  document.getElementById('oModalTitle').textContent='Asignar motorizado · #'+(o.orderNumber||o.id.slice(-6));
-  if(!motos.length){
-    document.getElementById('oModalBody').innerHTML='<div style="text-align:center;padding:20px;color:var(--sub);">No hay motorizados configurados para esta sede.<br><small>Ve a la sección Motorizados para agregar uno.</small></div>';
-    document.getElementById('oModalFooter').innerHTML='<button class="btn btn-outline btn-sm" onclick="viewOrder(\'' + ordId + '\')">← Volver</button>';
-    return;
-  }
+  document.getElementById('oModalTitle').textContent=`Asignar motorizado · #${(o.id||'').slice(-6)}`;
   document.getElementById('oModalBody').innerHTML=`
-    <div style="font-size:.84rem;color:var(--sub);margin-bottom:14px;">Selecciona quién lleva el pedido <strong>#${o.orderNumber||o.id.slice(-6)}</strong> a ${o.client}:</div>
+    <div style="font-size:.84rem;color:var(--sub);margin-bottom:14px;">Selecciona quién lleva el pedido <strong>#${(o.id||'').slice(-6)}</strong> a ${o.client}:</div>
     <div style="display:grid;grid-template-columns:repeat(${Math.min(motos.length,3)},1fr);gap:8px;margin-bottom:16px;">
       ${motos.map(m=>`
         <div id="mc-${m.id}" onclick="selMoto2('${m.id}')" style="border:2px solid var(--gray2);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .2s;">
@@ -1205,7 +1181,7 @@ window.confirmMotoAssign2 = async function(){
     const msgC=encodeURIComponent(`Hola ${(o.client||'').split(' ')[0]} 👋🏼\n\n🛵 *Su pedido está en camino* con nuestro motorizado *${m.name}*.\n📱 Contacto: ${m.phone}${mapLink}\n\n¡Gracias por elegir Mellow! 🎂`);
     window.open(`https://wa.me/${(o.phone||'').replace(/\D/g,'')}?text=${msgC}`,'_blank');
     const itemsStr=(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—';
-    const msgM=encodeURIComponent(`🛵 *ENTREGA MELLOW ${ordNum(o)}*\n📍 ${SEDES[o.sede]?.label||o.sede}\n\n👤 ${o.client} · ${o.phone}\n📦 ${itemsStr}${velaLine}${notaLine}\n📍 ${o.address||'Retiro en tienda'}${o.lat?'\n🗺️ https://www.google.com/maps?q='+o.lat+','+o.lng:''}\n📅 ${o.deliveryDate} ${o.deliveryTime}`);
+    const msgM=encodeURIComponent(`🛵 *ENTREGA MELLOW #${(o.id||'').slice(-6)}*\n📍 ${SEDES[o.sede]?.label||o.sede}\n\n👤 ${o.client} · ${o.phone}\n📦 ${itemsStr}${velaLine}${notaLine}\n📍 ${o.address||'Retiro en tienda'}${o.lat?'\n🗺️ https://www.google.com/maps?q='+o.lat+','+o.lng:''}\n📅 ${o.deliveryDate} ${o.deliveryTime}`);
     setTimeout(()=>window.open(`https://wa.me/${m.phone.replace(/\D/g,'')}?text=${msgM}`,'_blank'),600);
     closeModal('orderModal');
     toast(`🛵 Asignado a ${m.name} — notificados`, 'success');
@@ -1395,43 +1371,32 @@ function renderMotorizados(){
   const hist=orders.filter(o=>o.sede===sede&&o.motoId);
   document.getElementById('motoHistBody').innerHTML=hist.map(o=>`
     <tr><td><strong>${motos.find(m=>m.id===o.motoId)?.name||'—'}</strong></td>
-    <td><span style="color:var(--blue);cursor:pointer;font-weight:700;" onclick="viewOrder('${o.id}')">${ordNum(o)}</span></td>
+    <td><span style="color:var(--blue);cursor:pointer;font-weight:700;" onclick="viewOrder('${o.id}')">#${(o.id||'').slice(-6)}</span></td>
     <td>${o.client||'—'}</td><td style="font-size:.75rem;color:var(--sub);max-width:130px;">${o.address||'Retiro'}</td>
     <td style="font-size:.78rem;">${o.deliveryDate||'—'} ${o.deliveryTime||''}</td>
     <td><span class="badge ${SB[o.status]||'b-new'}">${SL[o.status]||'—'}</span></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--sub)">Sin entregas</td></tr>';
 }
 
 window.addMoto = async function(){
-  const sede = viewSede==='all' ? 'caracas' : viewSede;
-  const name = prompt('Nombre del motorizado:'); if(!name||!name.trim()) return;
-  const phone = prompt('Teléfono WhatsApp (ej: +584121234567):'); if(!phone||!phone.trim()) return;
-  const cols = ['#2a5c9a','#1a7a3c','#8b3a8b','#c75000','#856404','#7b2d8b'];
-  const color = cols[(sedeMotorizados[sede]||[]).length % cols.length];
-  const motoData = {
-    name: name.trim(),
-    phone: phone.trim(),
-    color: color,
-    sede: sede,
-    deliveries: 0,
-    createdAt: serverTimestamp(),
-  };
+  const sede=viewSede==='all'?'caracas':viewSede;
+  const name=prompt('Nombre del motorizado:'); if(!name||!name.trim()) return;
+  const phone=prompt('Teléfono WhatsApp (ej: +584121234567):'); if(!phone||!phone.trim()) return;
+  const cols=['#2a5c9a','#1a7a3c','#8b3a8b','#c75000','#856404','#7b2d8b'];
+  const color=cols[(sedeMotorizados[sede]||[]).length%cols.length];
   try {
-    const ref = await addDoc(collection(db,'motorizados'), motoData);
-    if(!sedeMotorizados[sede]) sedeMotorizados[sede] = [];
-    sedeMotorizados[sede].push(Object.assign({id:ref.id}, motoData));
-    renderMotorizados();
-    toast('✅ Motorizado guardado en Firebase', 'success');
-  } catch(e){ toast('Error: '+e.message, 'error'); }
+    const ref=await addDoc(collection(db,'motorizados'),{name:name.trim(),phone:phone.trim(),color,sede,deliveries:0,createdAt:serverTimestamp()});
+    if(!sedeMotorizados[sede]) sedeMotorizados[sede]=[];
+    sedeMotorizados[sede].push({id:ref.id,name:name.trim(),phone:phone.trim(),color,sede,deliveries:0});
+    renderMotorizados(); toast('✅ Motorizado guardado','success');
+  } catch(e){ toast('Error: '+e.message,'error'); }
 };
-
-window.delMoto = async function(id, sede){
+window.delMoto = async function(id,sede){
   if(!confirm('¿Eliminar este motorizado?')) return;
   try {
     await deleteDoc(doc(db,'motorizados',id));
-    sedeMotorizados[sede] = (sedeMotorizados[sede]||[]).filter(m=>m.id!==id);
-    renderMotorizados();
-    toast('🗑 Motorizado eliminado', 'success');
-  } catch(e){ toast('Error: '+e.message, 'error'); }
+    sedeMotorizados[sede]=(sedeMotorizados[sede]||[]).filter(m=>m.id!==id);
+    renderMotorizados(); toast('🗑 Eliminado','success');
+  } catch(e){ toast('Error: '+e.message,'error'); }
 };
 
 /* ══ DELIVERY ZONES ══ */

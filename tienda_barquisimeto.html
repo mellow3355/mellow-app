@@ -1211,11 +1211,13 @@ async function completeOrder(){
       if(existingSnap.exists()){
         var existingData = existingSnap.data();
         existingPast = existingData.pastOrders || [];
-        // If there was a previous active order, move it to pastOrders
-        if(existingData.activeOrderSummary && existingData.activeOrderSummary.orderId){
+        // Move previous active order to pastOrders history
+        if(existingData.activeOrderSummary && existingData.activeOrderSummary.items){
           var prevOrder = existingData.activeOrderSummary;
-          // Only add to history if not already there
-          var alreadyInHistory = existingPast.some(function(p){ return p.orderId === prevOrder.orderId; });
+          // Add to history if not already there (check by orderId or by items+date)
+          var alreadyInHistory = prevOrder.orderId 
+            ? existingPast.some(function(p){ return p.orderId === prevOrder.orderId; })
+            : false;
           if(!alreadyInHistory) existingPast = [prevOrder].concat(existingPast);
         }
       }
