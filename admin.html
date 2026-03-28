@@ -804,7 +804,11 @@ function initApp(){
   document.getElementById('sedeSwitcher').style.display = isOwner ? 'flex' : 'none';
   document.getElementById('navAnalytics').style.display=isOwner?'flex':'none';
   var tow=document.getElementById('tasaOwnerOnly'); if(tow) tow.style.display=isOwner?'none':'block';
-  var tinp=document.getElementById('tasaInp'); if(tinp&&!isOwner){tinp.disabled=true;tinp.style.opacity='.5';}
+  var tinp=document.getElementById('tasaInp');
+  if(tinp){
+    tinp.disabled = !isOwner;
+    tinp.style.opacity = isOwner ? '1' : '.5';
+  }
 
   setFbStatus('online');
   subscribeToOrders();
@@ -1442,7 +1446,8 @@ function updateTasaDisplay(){
   if(u&&tasaHist.length) u.textContent='Actualizado: '+tasaHist[0].dateLabel+' · '+tasaHist[0].src;
 }
 window.saveTasa=async function(){
-  if(currentSede!=="all"){toast("Solo el propietario edita la tasa","error");return;}
+  const isOwner2 = USER_SEDE_MAP[currentUser&&currentUser.email] === 'all';
+  if(!isOwner2){toast("Solo el propietario edita la tasa","error");return;}
   const v=parseFloat(document.getElementById('tasaInp').value); if(!v||v<=0){toast('⚠️ Tasa inválida');return;}
   tasaActual=v;
   const dateLabel=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});
@@ -1450,7 +1455,8 @@ window.saveTasa=async function(){
   try { await addDoc(collection(db,'tasa'),entry); tasaHist.unshift({...entry,date:new Date()}); updateTasaDisplay(); renderTasaHist(); document.getElementById('tasaInp').value=''; toast('✅ Tasa: Bs.'+v.toFixed(2),'success'); } catch(e){ toast('Error: '+e.message,'error'); }
 };
 window.fetchTasa=function(){
-  if(currentSede!=="all"){toast("Solo el propietario edita la tasa","error");return;}
+  const isOwner3 = USER_SEDE_MAP[currentUser&&currentUser.email] === 'all';
+  if(!isOwner3){toast("Solo el propietario edita la tasa","error");return;}
   const el=document.getElementById('fetchStatus'); if(el) el.innerHTML='<span style="color:var(--blue)">⏳ Consultando...</span>';
   setTimeout(async()=>{ const r=(53.80+Math.random()*1.5).toFixed(2); tasaActual=parseFloat(r); const dateLabel=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'}); const entry={rate:tasaActual,src:'BCV (auto)',dateLabel,createdAt:serverTimestamp()};
     try { await addDoc(collection(db,'tasa'),entry); tasaHist.unshift({...entry}); updateTasaDisplay(); renderTasaHist(); if(el) el.innerHTML=`<span style="color:var(--green)">✅ Bs.${r}</span>`; toast('✅ Tasa BCV: Bs.'+r,'success'); } catch(e){ if(el) el.innerHTML='Error: '+e.message; }
