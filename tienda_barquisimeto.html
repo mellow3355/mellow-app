@@ -999,12 +999,15 @@ loadSedePayInfo();
 /* COMPLETE ORDER */
 async function completeOrder(){
   if(!selectedPayMethod){document.getElementById('payErr').style.display='block';return;}
+
+  // Read phone once at the top
+  const phone=document.getElementById('coPhone').value.trim();
+
   // Check if client already has an active order
-  var phone = document.getElementById('coPhone').value.trim();
   if(phone){
     var hasActive = await checkActiveOrder(phone);
     if(hasActive){
-      alert('Ya tienes un pedido en proceso. Puedes ver su estado en tu perfil (👤). Por favor espera a que se complete antes de hacer otro pedido.');
+      alert('Ya tienes un pedido en proceso. Puedes ver tu estado en el icono 👤. Espera a que se complete antes de hacer otro pedido.');
       return;
     }
   }
@@ -1016,7 +1019,6 @@ async function completeOrder(){
   }
 
   const name=document.getElementById('coName').value;
-  const phone=document.getElementById('coPhone').value;
   const addr=document.getElementById('coAddr').value;
   const ref2=document.getElementById('coRef2').value;
   const ref=document.getElementById('coRef').value;
