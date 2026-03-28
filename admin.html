@@ -277,10 +277,10 @@ textarea{min-height:70px;resize:vertical;}
     <div class="login-err" id="loginErr">Usuario o contraseña incorrectos</div>
     <div class="demo-box">
       <strong>Usuarios de demostración:</strong><br>
-      👑 owner@mellow.com · owner2025<br>
-      📍 caracas@mellow.com · ccs2025<br>
-      📍 barquisimeto@mellow.com · bqto2025<br>
-      📍 maracaibo@mellow.com · mcbo2025
+      👑 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bfd0c8d1dacdffd2dad3d3d0c891dcd0d2">[email&#160;protected]</a> · owner2025<br>
+      📍 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6f0c0e1d0e0c0e1c2f020a03030018410c0002">[email&#160;protected]</a> · ccs2025<br>
+      📍 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4624273437332f352f2b233229062b232a2a29316825292b">[email&#160;protected]</a> · bqto2025<br>
+      📍 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d0bdb1a2b1b3b1b9b2bf90bdb5bcbcbfa7feb3bfbd">[email&#160;protected]</a> · mcbo2025
     </div>
   </div>
 </div>
@@ -306,6 +306,7 @@ textarea{min-height:70px;resize:vertical;}
       <div class="nav-item" onclick="nav('delivery')"><span class="nav-icon">📍</span><span>Zonas delivery</span></div>
       <div class="nav-group">Configuración</div>
       <div class="nav-item" onclick="nav('horarios')"><span class="nav-icon">🕐</span><span>Horarios</span></div>
+      <div class="nav-item" onclick="nav('pagos')"><span class="nav-icon">💳</span><span>Datos de pago</span></div>
       <div class="nav-item" onclick="nav('tasa')"><span class="nav-icon">💱</span><span>Tasa del día</span></div>
       <div class="nav-group">Negocio</div>
       <div class="nav-item" onclick="nav('clients')"><span class="nav-icon">👥</span><span>Clientes</span></div>
@@ -476,7 +477,8 @@ textarea{min-height:70px;resize:vertical;}
 
       <!-- TASA -->
       <div class="page" id="page-tasa">
-        <div class="page-header"><h1>Tasa del día</h1></div>
+        <div class="page-header"><h1>Tasa del dia</h1></div>
+        <div id="tasaOwnerOnly" style="display:none;background:var(--yellow-l);border:1.5px solid #e0c060;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:.84rem;color:var(--yellow);font-weight:600;">Solo el propietario puede editar la tasa. Aplica a todas las sedes.</div>
         <div class="tasa-hero">
           <div>
             <div style="font-size:.75rem;opacity:.7;margin-bottom:4px;">Tasa actual (Bs. por $1 USD)</div>
@@ -509,6 +511,28 @@ textarea{min-height:70px;resize:vertical;}
         <div class="card">
           <div class="card-header"><div class="card-title">📅 Historial</div></div>
           <div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Tasa Bs./$</th><th>Fuente</th></tr></thead><tbody id="tasaHistBody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- PAGOS -->
+      <div class="page" id="page-pagos">
+        <div class="page-header"><h1>Datos de pago</h1><button class="btn btn-wine btn-sm" onclick="savePagos()">Guardar</button></div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-header"><div class="card-title" id="pagosCardTitle">Pago Movil</div></div>
+          <div class="card-body">
+            <p style="font-size:.82rem;color:var(--sub);margin-bottom:16px;">Estos datos se muestran al cliente cuando elige <strong>Pago Movil</strong>.</p>
+            <div class="field"><label>Banco</label><input type="text" id="pagoBanco" placeholder="Ej: Banesco" oninput="updatePagosPreview()"/></div>
+            <div class="field"><label>Numero de celular</label><input type="tel" id="pagoCelular" placeholder="Ej: 0424-2708381" oninput="updatePagosPreview()"/></div>
+            <div class="field"><label>Cedula del titular</label><input type="text" id="pagoCedula" placeholder="Ej: V-12345678" oninput="updatePagosPreview()"/></div>
+            <div style="background:var(--gray);border-radius:10px;padding:14px;margin-top:6px;">
+              <div style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:8px;">Vista previa para el cliente</div>
+              <div id="pagosPreview" style="font-size:.88rem;color:var(--text);line-height:2;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Zelle</div></div>
+          <div class="card-body"><div class="field"><label>Email o telefono Zelle</label><input type="text" id="pagoZelle" placeholder="Ej: mellowcakeshop@gmail.com"/></div></div>
         </div>
       </div>
 
@@ -598,7 +622,7 @@ textarea{min-height:70px;resize:vertical;}
 <div class="toast" id="toast"></div>
 
 <!-- ══════════════ FIREBASE + APP SCRIPT ══════════════ -->
-<script type="module">
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, getDocs, setDoc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
@@ -779,7 +803,7 @@ window.nav = function(name){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+name)?.classList.add('active');
   document.querySelector(`[onclick="nav('${name}')"]`)?.classList.add('active');
-  const T={dashboard:'Dashboard',orders:'Órdenes',store:'Editor de tienda',motorizados:'Motorizados',delivery:'Zonas delivery',horarios:'Horarios',tasa:'Tasa del día',clients:'Clientes',analytics:'Analíticas globales'};
+  const T={dashboard:'Dashboard',orders:'Órdenes',store:'Editor de tienda',motorizados:'Motorizados',delivery:'Zonas delivery',pagos:'Datos de pago',horarios:'Horarios',tasa:'Tasa del día',clients:'Clientes',analytics:'Analíticas globales'};
   document.getElementById('pageTitle').textContent=T[name]||name;
   const liveDot=document.getElementById('liveDot');
   liveDot.style.display=(name==='orders'||name==='dashboard')?'inline-flex':'none';
@@ -788,6 +812,7 @@ window.nav = function(name){
   if(name==='store') renderStoreEditor();
   if(name==='motorizados') renderMotorizados();
   if(name==='delivery') renderZones();
+  if(name==='pagos'){ loadPagos(); var pt=document.getElementById('pagosCardTitle'); if(pt){ var sk=viewSede==='all'?'caracas':viewSede; pt.textContent='Pago Movil - '+((SEDES[sk]&&SEDES[sk].label)||sk); } }
   if(name==='horarios') renderSchedule();
   if(name==='tasa'){ renderTasaHist(); updateTasaDisplay(); }
   if(name==='clients') renderClients();
@@ -843,21 +868,16 @@ async function loadTasa(){
 
 /* ══ FIRESTORE: SCHEDULES ══ */
 async function loadSchedules(){
-  try {
-    const snap = await getDocs(collection(db,'schedules'));
-    snap.docs.forEach(d=>{ sedeSchedules[d.id]=d.data(); });
-    renderSchedule();
-  } catch(e){ initDefaultSchedules(); }
+  try{ var snap=await getDocs(collection(db,'schedules')); snap.docs.forEach(function(d){ sedeSchedules[d.id]=d.data(); }); }catch(e){ console.log('No schedules'); }
+  initDefaultSchedules();
+  renderSchedule();
 }
 
+function getDefaultDays(){
+  return [{day:'Lunes',open:'13:30',close:'22:00',active:false},{day:'Martes',open:'13:30',close:'22:00',active:true},{day:'Miercoles',open:'13:30',close:'22:00',active:true},{day:'Jueves',open:'13:30',close:'22:00',active:true},{day:'Viernes',open:'13:30',close:'22:00',active:true},{day:'Sabado',open:'13:30',close:'22:00',active:true},{day:'Domingo',open:'13:30',close:'22:00',active:true}];
+}
 function initDefaultSchedules(){
-  const defaultDays=[
-    {day:'Lunes',open:'10:00',close:'19:00',active:true},{day:'Martes',open:'10:00',close:'19:00',active:true},
-    {day:'Miércoles',open:'10:00',close:'19:00',active:true},{day:'Jueves',open:'10:00',close:'19:00',active:true},
-    {day:'Viernes',open:'10:00',close:'19:00',active:true},{day:'Sábado',open:'10:00',close:'20:00',active:true},
-    {day:'Domingo',open:'',close:'',active:false}
-  ];
-  Object.keys(SEDES).forEach(sk=>{ sedeSchedules[sk]={manualClosed:false,days:[...defaultDays.map(d=>({...d}))]};});
+  Object.keys(SEDES).forEach(function(sk){ if(!sedeSchedules[sk]) sedeSchedules[sk]={manualClosed:false,days:getDefaultDays()}; });
 }
 
 /* ══ DASHBOARD ══ */
@@ -1315,20 +1335,26 @@ window.saveZones=async function(){
 
 /* ══ HORARIOS ══ */
 function renderSchedule(){
-  const sede=viewSede==='all'?'caracas':viewSede;
-  const s=sedeSchedules[sede]||{manualClosed:false,days:[]};
-  document.getElementById('schedTitle').textContent='Horario — '+(SEDES[sede]?.label||sede);
-  const mc=document.getElementById('manualClose'); if(mc) mc.checked=!!s.manualClosed;
+  var sede=viewSede==='all'?'caracas':viewSede;
+  if(!sedeSchedules[sede]) sedeSchedules[sede]={manualClosed:false,days:getDefaultDays()};
+  var s=sedeSchedules[sede];
+  if(!s.days||!s.days.length) s.days=getDefaultDays();
+  document.getElementById('schedTitle').textContent='Horario - '+((SEDES[sede]&&SEDES[sede].label)||sede);
+  var mc=document.getElementById('manualClose'); if(mc) mc.checked=!!s.manualClosed;
   updateSedeStatus(sede,s);
-  document.getElementById('schedGrid').innerHTML=(s.days||[]).map((d,i)=>`
-    <div class="sched-row">
-      <span class="day-nm">${d.day}</span>
-      <input class="time-sm" id="so-${i}" type="time" value="${d.open||''}" ${!d.active?'disabled':''}/>
-      <span style="color:var(--sub);font-size:.8rem;">→</span>
-      <input class="time-sm" id="sc-${i}" type="time" value="${d.close||''}" ${!d.active?'disabled':''}/>
-      <label class="toggle" style="margin-left:6px;"><input type="checkbox" ${d.active?'checked':''} onchange="togDay(${i},this.checked)"/><span class="toggle-sl"></span></label>
-      <span style="margin-left:auto;font-size:.75rem;font-weight:600;color:${d.active?'var(--green)':'var(--sub)'};">${d.active&&d.open?d.open+'–'+d.close:'Cerrado'}</span>
-    </div>`).join('');
+  var on='padding:9px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-family:Outfit,sans-serif;font-size:.88rem;width:100%;outline:none;background:#fff;';
+  var off='padding:9px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-family:Outfit,sans-serif;font-size:.88rem;width:100%;outline:none;background:var(--gray);';
+  var h='<div style="display:grid;grid-template-columns:110px 1fr 1fr 60px 100px;gap:8px;padding:6px 4px 10px;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sub);border-bottom:1px solid var(--gray2);margin-bottom:2px;"><span>Dia</span><span>Abre</span><span>Cierra</span><span>Abierto</span><span></span></div>';
+  (s.days||[]).forEach(function(d,i){
+    h+='<div style="display:grid;grid-template-columns:110px 1fr 1fr 60px 100px;gap:8px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--gray);">';
+    h+='<span style="font-size:.88rem;font-weight:600;">'+d.day+'</span>';
+    h+='<input id="so-'+i+'" type="time" value="'+(d.open||'')+'" '+(d.active?'':'disabled')+' style="'+(d.active?on:off)+'"/>';
+    h+='<input id="sc-'+i+'" type="time" value="'+(d.close||'')+'" '+(d.active?'':'disabled')+' style="'+(d.active?on:off)+'"/>';
+    h+='<label class="toggle" style="margin:0 auto;"><input type="checkbox" '+(d.active?'checked':'')+' onchange="togDay('+i+',this.checked)"/><span class="toggle-sl"></span></label>';
+    h+='<span style="font-size:.75rem;font-weight:700;color:'+(d.active?'var(--green)':'var(--sub)')+';">'+(d.active&&d.open?d.open+' - '+d.close:'Cerrado')+'</span>';
+    h+='</div>';
+  });
+  document.getElementById('schedGrid').innerHTML=h;
 }
 window.togDay=function(i,v){ const sede=viewSede==='all'?'caracas':viewSede; const s=sedeSchedules[sede]; if(!s) return; s.days[i].active=v; const so=document.getElementById('so-'+i),sc=document.getElementById('sc-'+i); if(so)so.disabled=!v; if(sc)sc.disabled=!v; renderSchedule(); };
 window.toggleManual=function(){ const sede=viewSede==='all'?'caracas':viewSede; const s=sedeSchedules[sede]; if(!s) return; s.manualClosed=document.getElementById('manualClose').checked; updateSedeStatus(sede,s); toast(s.manualClosed?'🔴 Sede cerrada':'🟢 Sede abierta'); };
@@ -1357,6 +1383,7 @@ function updateTasaDisplay(){
   if(u&&tasaHist.length) u.textContent='Actualizado: '+tasaHist[0].dateLabel+' · '+tasaHist[0].src;
 }
 window.saveTasa=async function(){
+  if(currentSede!=="all"){toast("Solo el propietario edita la tasa","error");return;}
   const v=parseFloat(document.getElementById('tasaInp').value); if(!v||v<=0){toast('⚠️ Tasa inválida');return;}
   tasaActual=v;
   const dateLabel=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});
@@ -1364,6 +1391,7 @@ window.saveTasa=async function(){
   try { await addDoc(collection(db,'tasa'),entry); tasaHist.unshift({...entry,date:new Date()}); updateTasaDisplay(); renderTasaHist(); document.getElementById('tasaInp').value=''; toast('✅ Tasa: Bs.'+v.toFixed(2),'success'); } catch(e){ toast('Error: '+e.message,'error'); }
 };
 window.fetchTasa=function(){
+  if(currentSede!=="all"){toast("Solo el propietario edita la tasa","error");return;}
   const el=document.getElementById('fetchStatus'); if(el) el.innerHTML='<span style="color:var(--blue)">⏳ Consultando...</span>';
   setTimeout(async()=>{ const r=(53.80+Math.random()*1.5).toFixed(2); tasaActual=parseFloat(r); const dateLabel=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'}); const entry={rate:tasaActual,src:'BCV (auto)',dateLabel,createdAt:serverTimestamp()};
     try { await addDoc(collection(db,'tasa'),entry); tasaHist.unshift({...entry}); updateTasaDisplay(); renderTasaHist(); if(el) el.innerHTML=`<span style="color:var(--green)">✅ Bs.${r}</span>`; toast('✅ Tasa BCV: Bs.'+r,'success'); } catch(e){ if(el) el.innerHTML='Error: '+e.message; }
@@ -1397,6 +1425,41 @@ window.exportClients=function(){
 };
 
 /* ══ ANALYTICS ══ */
+
+/* ══ PAGOS CONFIG ══ */
+async function loadPagos(){
+  var sede=viewSede==='all'?'caracas':viewSede;
+  try{
+    var snap=await getDoc(doc(db,'settings','pagos_'+sede));
+    if(snap.exists()){
+      var d=snap.data();
+      if(document.getElementById('pagoBanco')) document.getElementById('pagoBanco').value=d.banco||'';
+      if(document.getElementById('pagoCelular')) document.getElementById('pagoCelular').value=d.celular||'';
+      if(document.getElementById('pagoCedula')) document.getElementById('pagoCedula').value=d.cedula||'';
+      if(document.getElementById('pagoZelle')) document.getElementById('pagoZelle').value=d.zelle||'';
+      updatePagosPreview();
+    }
+  }catch(e){ console.log('No pago data'); }
+}
+function updatePagosPreview(){
+  var b=(document.getElementById('pagoBanco')&&document.getElementById('pagoBanco').value)||'-';
+  var c=(document.getElementById('pagoCelular')&&document.getElementById('pagoCelular').value)||'-';
+  var ci=(document.getElementById('pagoCedula')&&document.getElementById('pagoCedula').value)||'-';
+  var p=document.getElementById('pagosPreview');
+  if(p) p.innerHTML='<strong>Banco:</strong> '+b+'<br><strong>Telefono:</strong> '+c+'<br><strong>Cedula:</strong> '+ci;
+}
+window.savePagos=async function(){
+  var sede=viewSede==='all'?'caracas':viewSede;
+  var data={
+    banco:(document.getElementById('pagoBanco')&&document.getElementById('pagoBanco').value.trim())||'',
+    celular:(document.getElementById('pagoCelular')&&document.getElementById('pagoCelular').value.trim())||'',
+    cedula:(document.getElementById('pagoCedula')&&document.getElementById('pagoCedula').value.trim())||'',
+    zelle:(document.getElementById('pagoZelle')&&document.getElementById('pagoZelle').value.trim())||'',
+    updatedAt:serverTimestamp()
+  };
+  try{ await setDoc(doc(db,'settings','pagos_'+sede),data); toast('Datos de pago guardados','success'); }catch(e){ toast('Error: '+e.message,'error'); }
+};
+window.updatePagosPreview=updatePagosPreview;
 function renderAnalytics(){
   const sedeKeys=Object.keys(SEDES);
   document.getElementById('globalStats').innerHTML=sedeKeys.map(sk=>{
@@ -1414,15 +1477,4 @@ function renderAnalytics(){
   }).join('');
   setTimeout(()=>{
     const c1=document.getElementById('chartSedes'),c2=document.getElementById('chartProd');
-    if(c1&&!c1._c){c1._c=new Chart(c1.getContext('2d'),{type:'bar',data:{labels:sedeKeys.map(sk=>SEDES[sk].label),datasets:[{label:'$',data:sedeKeys.map(sk=>ordersCache.filter(o=>o.sede===sk&&o.status!=='cancelled').reduce((s,o)=>s+(o.total||0),0)),backgroundColor:sedeKeys.map(sk=>SEDES[sk].color)}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{grid:{display:false}}}}});}
-    if(c2&&!c2._c){c2._c=new Chart(c2.getContext('2d'),{type:'doughnut',data:{labels:['Chocolate','Tiramisú','Lemon Pie','Magnolia'],datasets:[{data:[362,103,89,74],backgroundColor:['#3d1a24','#2d3fe0','#c9973a','#1a7a3c']}]},options:{plugins:{legend:{position:'bottom'}}}});}
-  },100);
-}
-
-// Make functions globally accessible for inline onclick handlers
-window.viewOrder=viewOrder;
-window.openVoucher=openVoucher;
-window.chgStatus=chgStatus;
-</script>
-</body>
-</html>
+    if(c1&&!c1._c){c1._c=new Chart(c1.getContext('2d'),{type:'bar',data:{labels:sedeKeys.map(sk=>SEDES[sk].label),datasets:[{label:'$',data:sedeKeys.map(sk=>ordersCache.filter(o=>o.sede===sk&&o.status!=='cancelled').reduce((s,o)=>s+(o.total||0),0)),backgroundColor:sedeKeys.map(

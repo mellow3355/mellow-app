@@ -296,23 +296,11 @@ footer{background:#110d06;padding:36px 20px 28px;text-align:center;border-top:1p
     <div class="field"><label>Fecha de nacimiento</label><input type="date" id="coBirthdate"/></div>
 
     <div style="height:1px;background:var(--gray2);margin:18px 0;"></div>
-
-    <div class="co-title" style="margin-bottom:14px;">Fecha y hora de entrega</div>
-    <div class="co-dt-grid">
-      <div class="field" id="f-coDate">
-        <label>Fecha</label>
-        <input type="date" id="coDeliveryDate" onchange="onCoDateChange()"/>
-        <div class="err">Selecciona una fecha</div>
-      </div>
-      <div class="field" id="f-coTime">
-        <label>Hora</label>
-        <select id="coDeliveryTime" onchange="validateCoDatetime()" disabled>
-          <option value="">Selecciona hora</option>
-        </select>
-        <div class="err">Selecciona una hora</div>
-      </div>
+    <!-- Date/time is chosen when adding to cart, shown here as summary -->
+    <div id="deliverySummaryBox" style="background:var(--gray);border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+      <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:5px;">Fecha y hora de entrega</div>
+      <div id="deliverySummaryText" style="font-size:.88rem;font-weight:600;color:var(--text);"></div>
     </div>
-    <div id="coDateHint" style="font-size:.75rem;color:var(--sub);margin-top:-10px;margin-bottom:14px;"></div>
 
     <!-- EXTRAS -->
     <div style="height:1px;background:var(--gray2);margin:18px 0;"></div>
@@ -482,13 +470,17 @@ footer{background:#110d06;padding:36px 20px 28px;text-align:center;border-top:1p
 const OWNER_WA = '584242708381';
 const SEDE_KEY = 'caracas';
 const VALID_COUPONS = {'MELLOW10':10,'PRIMERAVEZ':15};
-const PAY_DATA = {
-  zelle:'Zelle: <b>mellowcakeshop@gmail.com</b>',
-  pago_movil:'Banco: <b>Banesco</b><br>Teléfono: <b>+58 424 270 8381</b><br>RIF: <b>J-000000000</b>',
-  efectivo:'Paga en <b>efectivo al retirar</b> en la sede.',
-  combinado:'Indica cómo dividirás el monto entre los métodos disponibles.',
-  punto:'Punto de venta disponible <b>en sede</b>.',
-};
+// Pay data loaded dynamically from Firebase
+function getPayData(){
+  return {
+    zelle: sedePayInfo.zelle ? 'Zelle: <b>' + sedePayInfo.zelle + '</b>' : 'Zelle: consultar con la tienda',
+    pago_movil: 'Banco: <b>' + (sedePayInfo.banco||'Consultar') + '</b><br>Telefono: <b>' + (sedePayInfo.celular||'Consultar') + '</b><br>Cedula: <b>' + (sedePayInfo.cedula||'Consultar') + '</b>',
+    efectivo: 'Paga en <b>efectivo al retirar</b> en la sede.',
+    combinado: 'Indica como dividiras el monto entre los metodos disponibles.',
+    punto: 'Punto de venta disponible <b>en sede</b>.',
+  };
+}
+const PAY_DATA = {};
 
 // REAL product photos from Mellow's Wink store
 // Products loaded from Firebase - starts empty, filled on load
@@ -511,6 +503,15 @@ function getTodayStr(){
 
 // Sede schedule loaded from Firebase
 let sedeSchedule = null;
+let sedePayInfo = { banco:'', celular:'', cedula:'', zelle:'' };
+
+async function loadSedePayInfo(){
+  try {
+    const { getDoc, doc: firestoreDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    var snap = await getDoc(firestoreDoc(db, 'settings', 'pagos_' + SEDE_KEY));
+    if(snap.exists()) sedePayInfo = snap.data();
+  } catch(e){ console.log('No pay info'); }
+}
 
 async function loadSedeSchedule(){
   try {
@@ -784,9 +785,16 @@ function startCheckout(){
   closeCart();
   document.getElementById('deliverySection').style.display=deliveryMode==='delivery'?'block':'none';
   // Set min date on co date picker
-  document.getElementById('coDeliveryDate').min=getMinDate();
-  document.getElementById('coDeliveryDate').max=getMaxDate();
-  document.getElementById('coDeliveryDate').value='';
+  // Show delivery summary from cart items
+  var allDates = cart.map(function(c){ return c.date; }).filter(Boolean);
+  var summaryEl = document.getElementById('deliverySummaryText');
+  if(summaryEl && allDates.length){
+    var unique = allDates.filter(function(v,i,a){ return a.indexOf(v)===i; });
+    summaryEl.textContent = unique.join(', ');
+  }
+  // Keep hidden fields for compatibility
+  var coDate = document.getElementById('coDeliveryDate');
+  var coTime = document.getElementById('coDeliveryTime');
   document.getElementById('coDeliveryTime').innerHTML='<option value="">Selecciona hora</option>';
   document.getElementById('coDeliveryTime').disabled=true;
   document.getElementById('coScreen1').classList.add('active');
@@ -822,13 +830,9 @@ function goStep2(){
   let ok=true;
   if(!req('f-name',document.getElementById('coName').value)) ok=false;
   if(!req('f-phone',document.getElementById('coPhone').value)) ok=false;
-  // Validate delivery date/time
-  const dateVal=document.getElementById('coDeliveryDate').value;
-  const timeVal=document.getElementById('coDeliveryTime').value;
-  if(!dateVal){document.getElementById('f-coDate').classList.add('invalid');ok=false;}
-  else document.getElementById('f-coDate').classList.remove('invalid');
-  if(!timeVal){document.getElementById('f-coTime').classList.add('invalid');ok=false;}
-  else document.getElementById('f-coTime').classList.remove('invalid');
+  // Date/time comes from cart items - just verify cart has items with dates
+  var hasDate = cart.some(function(c){ return c.date; });
+  if(!hasDate){ alert('Agrega productos al carrito primero'); ok=false; }
   if(deliveryMode==='delivery'&&!req('f-addr',document.getElementById('coAddr').value)) ok=false;
   if(!ok) return;
   document.getElementById('totalAmount').textContent=`REF ${getTotal().toFixed(2)}`;
@@ -851,7 +855,7 @@ function selPay(method){
 
   const box=document.getElementById('payDetailsBox');
   const needsVoucher=method!=='efectivo'&&method!=='punto';
-  if(PAY_DATA[method]){box.style.display='block';document.getElementById('payDetailsText').innerHTML=PAY_DATA[method];}
+  var pd=getPayData(); if(pd[method]){box.style.display='block';document.getElementById('payDetailsText').innerHTML=pd[method];}
   else box.style.display='none';
   document.getElementById('voucherSection').style.display=needsVoucher?'block':'none';
 
@@ -987,12 +991,17 @@ async function loadFirebaseProducts(){
 }
 loadSedeSchedule();
 loadFirebaseProducts();
+loadSedePayInfo();
 
 /* COMPLETE ORDER */
 async function completeOrder(){
   if(!selectedPayMethod){document.getElementById('payErr').style.display='block';return;}
-  const needsVoucher=selectedPayMethod!=='efectivo'&&selectedPayMethod!=='punto';
-  if(needsVoucher&&!voucherB64){document.getElementById('f-voucher')?.classList.add('invalid');return;}
+  const needsVoucher=selectedPayMethod==='pago_movil'||selectedPayMethod==='zelle'||selectedPayMethod==='combinado';
+  if(needsVoucher&&!voucherB64){
+    document.getElementById('f-voucher')?.classList.add('invalid');
+    document.getElementById('f-voucher')?.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
 
   const name=document.getElementById('coName').value;
   const phone=document.getElementById('coPhone').value;
@@ -1001,8 +1010,11 @@ async function completeOrder(){
   const ref=document.getElementById('coRef').value;
   const birthdate=document.getElementById('coBirthdate').value;
   const notaText=document.getElementById('coNota')?.value||'';
-  const delivDate=document.getElementById('coDeliveryDate').value;
-  const delivTime=document.getElementById('coDeliveryTime').value;
+  // Get delivery date/time from cart (set when product was added)
+  var cartDates = cart.map(function(c){ return c.date; }).filter(Boolean);
+  var uniqueDates = cartDates.filter(function(v,i,a){ return a.indexOf(v)===i; });
+  const delivDate = uniqueDates[0] ? uniqueDates[0].split(' a las ')[0] : '';
+  const delivTime = uniqueDates[0] ? (uniqueDates[0].split(' a las ')[1]||'') : '';
   const delivFee = deliveryMode==='delivery'?3:0;
   const subtotal = getSubtotal();
   const total = getTotal() + delivFee;
@@ -1134,5 +1146,112 @@ window.onCoDateChange = onCoDateChange;
 window.openGoogleMaps = openGoogleMaps;
 window.calcCashChange = calcCashChange;
 </script>
+
+<!-- ORDER TRACKING PAGE -->
+<div id="trackingScreen" style="display:none;position:fixed;inset:0;z-index:400;background:var(--cream);overflow-y:auto;">
+  <div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--gray2);background:#fff;position:sticky;top:0;z-index:10;">
+    <button onclick="document.getElementById('trackingScreen').style.display='none'" style="width:36px;height:36px;border-radius:50%;border:none;background:var(--gray);cursor:pointer;font-size:1rem;">←</button>
+    <div style="font-size:1rem;font-weight:700;">Rastrear mi pedido</div>
+  </div>
+  <div style="padding:20px;">
+    <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:16px;">
+      <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:8px;">Ingresa tu numero de WhatsApp</div>
+      <div style="display:flex;gap:8px;">
+        <input type="tel" id="trackPhone" placeholder="+58 424 270 8381" style="flex:1;padding:12px 14px;border:1.5px solid var(--gray2);border-radius:10px;font-family:Outfit,sans-serif;font-size:.9rem;outline:none;"/>
+        <button onclick="trackOrder()" style="padding:0 18px;background:var(--wine-d);color:#fff;border:none;border-radius:10px;font-family:Outfit,sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;white-space:nowrap;">Buscar</button>
+      </div>
+    </div>
+    <div id="trackResults"></div>
+  </div>
+</div>
+
+<!-- Floating track button -->
+<div style="position:fixed;bottom:20px;left:20px;z-index:100;">
+  <button onclick="document.getElementById('trackingScreen').style.display='block'" style="background:var(--wine-d);color:#fff;border:none;border-radius:100px;padding:11px 18px;font-family:Outfit,sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(61,26,36,.3);display:flex;align-items:center;gap:6px;">
+    📦 ¿Dónde está mi pedido?
+  </button>
+</div>
+
+/* ══ ORDER TRACKING ══ */
+window.trackOrder = async function(){
+  var phone = document.getElementById('trackPhone').value.trim().replace(/\s/g,'');
+  if(!phone){ alert('Ingresa tu numero de WhatsApp'); return; }
+  var resultsEl = document.getElementById('trackResults');
+  resultsEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--sub);">Buscando...</div>';
+  
+  try {
+    const { getDocs, collection: col, query: q2, where } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    // Search by phone - try with and without country code
+    var snap = await getDocs(q2(col(db,'orders'), where('phone','==',phone)));
+    if(snap.empty && !phone.startsWith('+')){
+      snap = await getDocs(q2(col(db,'orders'), where('phone','==','+'+phone)));
+    }
+    if(snap.empty && phone.startsWith('+')){
+      snap = await getDocs(q2(col(db,'orders'), where('phone','==',phone.slice(1))));
+    }
+    
+    if(snap.empty){
+      resultsEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--sub);background:#fff;border-radius:12px;">No encontramos pedidos con ese numero.<br><small>Verifica el numero que usaste al pedir.</small></div>';
+      return;
+    }
+    
+    var orders = snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+    orders.sort(function(a,b){ return (b.createdAt?.seconds||0)-(a.createdAt?.seconds||0); });
+    
+    var statusInfo = {
+      new:       { icon:'🆕', label:'Por confirmar',   desc:'Tu pedido fue recibido y esta pendiente de confirmacion de pago.',  color:'#6b21a8', bg:'#f3e8ff' },
+      confirmed: { icon:'✅', label:'Pago confirmado', desc:'Tu pago fue confirmado. Estamos preparando tu pedido con amor.',     color:'#2d3fe0', bg:'#e8ecff' },
+      transit:   { icon:'🛵', label:'En camino',       desc:'Tu pedido esta en camino con nuestro motorizado.',                   color:'#c75000', bg:'#fff0e6' },
+      done:      { icon:'🏁', label:'Entregado',       desc:'Tu pedido fue entregado. Gracias por elegir Mellow!',              color:'#1a7a3c', bg:'#e8f8ee' },
+      cancelled: { icon:'❌', label:'Cancelado',       desc:'Este pedido fue cancelado. Contactanos para mas informacion.',      color:'#c0392b', bg:'#fdecea' },
+    };
+    
+    var html = '<div style="font-size:.82rem;font-weight:600;color:var(--sub);margin-bottom:12px;">'+orders.length+' pedido(s) encontrado(s)</div>';
+    
+    orders.forEach(function(o){
+      var si = statusInfo[o.status] || statusInfo['new'];
+      var steps = [{k:'new',l:'Recibido'},{k:'confirmed',l:'Confirmado'},{k:'transit',l:'En camino'},{k:'done',l:'Entregado'}];
+      var curIdx = steps.findIndex(function(s){ return s.k===o.status; });
+      if(o.status==='cancelled') curIdx=-1;
+      
+      var stepperHtml = '<div style="display:flex;align-items:center;margin:14px 0 10px;">';
+      steps.forEach(function(s,i){
+        var isDone = i < curIdx;
+        var isActive = i === curIdx;
+        var circleStyle = 'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;';
+        if(isDone) circleStyle += 'background:#1a7a3c;color:#fff;border:2px solid #1a7a3c;';
+        else if(isActive) circleStyle += 'background:'+si.color+';color:#fff;border:2px solid '+si.color+';box-shadow:0 0 0 3px '+si.bg+';';
+        else circleStyle += 'background:#fff;color:#b0b8d0;border:2px solid #e4e6ef;';
+        stepperHtml += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;position:relative;">';
+        if(i < steps.length-1) stepperHtml += '<div style="position:absolute;top:14px;left:60%;width:80%;height:2px;background:'+(isDone?'#1a7a3c':'#e4e6ef')+';z-index:0;"></div>';
+        stepperHtml += '<div style="'+circleStyle+'z-index:1;">'+(isDone?'✓':(i+1))+'</div>';
+        stepperHtml += '<div style="font-size:.6rem;color:'+(isDone||isActive?'#1a1d2e':'#b0b8d0')+';margin-top:4px;text-align:center;font-weight:'+(isDone||isActive?'600':'400')+';">'+s.l+'</div>';
+        stepperHtml += '</div>';
+      });
+      stepperHtml += '</div>';
+      
+      var itemsStr = (o.items||[]).map(function(i){ return i.name+' x'+i.qty; }).join(', ') || 'Pedido';
+      var dateStr = o.deliveryDate ? ('Entrega: '+o.deliveryDate+(o.deliveryTime?' a las '+o.deliveryTime:'')) : '';
+      
+      html += '<div style="background:#fff;border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,.08);margin-bottom:14px;overflow:hidden;">';
+      html += '<div style="background:'+si.bg+';padding:14px 16px;display:flex;align-items:center;gap:10px;">';
+      html += '<span style="font-size:1.4rem;">'+si.icon+'</span>';
+      html += '<div><div style="font-size:.95rem;font-weight:700;color:'+si.color+';">'+si.label+'</div>';
+      html += '<div style="font-size:.75rem;color:'+si.color+';opacity:.8;">'+si.desc+'</div></div></div>';
+      if(o.status!=='cancelled') html += '<div style="padding:0 16px;">'+stepperHtml+'</div>';
+      html += '<div style="padding:0 16px 14px;border-top:1px solid #f5f6fa;">';
+      html += '<div style="font-size:.82rem;color:#6b7280;margin-top:10px;">'+itemsStr+'</div>';
+      if(dateStr) html += '<div style="font-size:.8rem;font-weight:600;color:#1a1d2e;margin-top:4px;">'+dateStr+'</div>';
+      html += '<div style="font-size:.78rem;color:#6b7280;margin-top:4px;">Total: $'+o.total+'</div>';
+      if(o.motoName&&o.status==='transit') html += '<div style="margin-top:8px;background:#fff0e6;border-radius:8px;padding:8px 10px;font-size:.82rem;font-weight:600;color:#c75000;">🛵 Motorizado: '+o.motoName+'</div>';
+      html += '</div></div>';
+    });
+    
+    resultsEl.innerHTML = html;
+  } catch(e){
+    console.error(e);
+    resultsEl.innerHTML = '<div style="text-align:center;padding:20px;color:#c0392b;">Error al buscar. Intenta de nuevo.</div>';
+  }
+};
 </body>
 </html>
