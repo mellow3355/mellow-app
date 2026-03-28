@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mellow Caracas — Pedidos</title>
+<title>Mellow Caracas - Pedidos</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 :root{
@@ -490,7 +490,7 @@ const PAY_DATA = {
 };
 
 // REAL product photos from Mellow's Wink store
-// Products loaded from Firebase — starts empty, filled on load
+// Products loaded from Firebase - starts empty, filled on load
 let PRODUCTS = [];
 
 /* ══ BUSINESS HOURS (matches admin) ══ */
@@ -853,7 +853,7 @@ function applyCoupon(){
   const code=document.getElementById('coCoupon').value.trim().toUpperCase();
   const ok=document.getElementById('couponOk'),err=document.getElementById('couponErrMsg');
   ok.style.display='none'; err.style.display='none';
-  if(VALID_COUPONS[code]){discount=getSubtotal()*(VALID_COUPONS[code]/100);ok.textContent=`✓ Cupón aplicado — ${VALID_COUPONS[code]}% de descuento`;ok.style.display='block';}
+  if(VALID_COUPONS[code]){discount=getSubtotal()*(VALID_COUPONS[code]/100);ok.textContent=`✓ Cupón aplicado - ${VALID_COUPONS[code]}% de descuento`;ok.style.display='block';}
   else{discount=0;err.style.display='block';}
   document.getElementById('totalAmount').textContent=`REF ${getTotal().toFixed(2)}`;
 }
@@ -884,7 +884,7 @@ async function loadStoreTasa(){
 }
 loadStoreTasa();
 
-// Load ALL products from Firebase — replaces local array completely
+// Load ALL products from Firebase - replaces local array completely
 async function loadFirebaseProducts(){
   try {
     const snap = await getDocs(query(collection(db,'products'), orderBy('order','asc')));
@@ -907,7 +907,7 @@ async function loadFirebaseProducts(){
       });
       renderProducts();
     } else {
-      // No products in Firebase yet — show message
+      // No products in Firebase yet - show message
       document.getElementById('productsGrid').innerHTML=
         '<div style="text-align:center;padding:40px;color:var(--sub);grid-column:1/-1;">Pronto tendremos productos disponibles 🎂</div>';
     }
@@ -957,7 +957,7 @@ async function completeOrder(){
 
   // Build order object for Firestore
   const orderData = {
-    sede: 'caracas', — la tienda puede tener su propia sede
+    sede: 'caracas',
     client: name,
     phone: phone,
     birthdate: birthdate || null,
@@ -996,7 +996,7 @@ async function completeOrder(){
     const bsLine=(selectedPayMethod==='pago_movil'||selectedPayMethod==='punto')&&storeTasa>0?`\n💱 *En Bs:* Bs. ${(total*storeTasa).toFixed(2)} (tasa ${storeTasa})`:'';
 
     const msg=encodeURIComponent(
-`🎂 *NUEVO PEDIDO — MELLOW*
+`🎂 *NUEVO PEDIDO - MELLOW*
 
 👤 *Cliente:* ${name}
 📱 *WhatsApp:* ${phone}${bdLine}
@@ -1035,7 +1035,7 @@ function resetAll(){
   document.getElementById('notaWrap').style.display='none';
 }
 
-/* INIT — products loaded from Firebase above */
+/* INIT - products loaded from Firebase above */
 
 /* ══ EXPOSE FUNCTIONS TO HTML onclick handlers ══ */
 window.openProduct = openProduct;
