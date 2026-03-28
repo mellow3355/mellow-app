@@ -859,23 +859,37 @@ window.ownerSwitch = function(sede, el){
 /* ══ FIRESTORE: ORDERS REALTIME ══ */
 function subscribeToOrders(){
   if(unsubOrders) unsubOrders();
-  let q;
+  // Use simple query without composite index requirement
+  // For sede managers: filter by sede only (no orderBy to avoid needing index)
+  // For owner: get all orders, sorted client-side
+  var q;
   if(currentSede==='all'){
     q = query(collection(db,'orders'), orderBy('createdAt','desc'));
   } else {
-    q = query(collection(db,'orders'), where('sede','==',currentSede), orderBy('createdAt','desc'));
+    q = query(collection(db,'orders'), where('sede','==',currentSede));
   }
-  unsubOrders = onSnapshot(q, (snap) => {
-    ordersCache = snap.docs.map(d=>({id:d.id,...d.data()}));
-    const pendingCount = ordersCache.filter(o=>o.status==='new').length;
+  unsubOrders = onSnapshot(q, function(snap){
+    ordersCache = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    // Sort client-side by createdAt descending
+    ordersCache.sort(function(a,b){
+      var ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+      var tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+      return tb - ta;
+    });
+    var pendingCount = ordersCache.filter(function(o){ return o.status==='new'; }).length;
     document.getElementById('newBadge').textContent = pendingCount;
-    const page=document.querySelector('.page.active');
+    var page = document.querySelector('.page.active');
     if(page){
-      const pname=page.id.replace('page-','');
+      var pname = page.id.replace('page-','');
       if(pname==='dashboard') renderDashboard();
       if(pname==='orders') renderOrders();
     }
-  }, (err)=>{ console.error(err); setFbStatus('offline'); });
+  }, function(err){
+    console.error('subscribeToOrders error:', err);
+    setFbStatus('offline');
+    // Show error details
+    toast('Error cargando ordenes: ' + err.message, 'error');
+  });
 }
 
 /* ══ FIRESTORE: PRODUCTS ══ */
