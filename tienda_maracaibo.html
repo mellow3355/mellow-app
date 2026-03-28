@@ -1348,6 +1348,34 @@ window.loadProfile = async function(){
     var activeOrder = clientData.activeOrderSummary || null;
     // If activeOrder is done or cancelled, move it to pastOrders display
     var pastOrders = clientData.pastOrders || [];
+
+    // Fetch completed/cancelled orders directly from Firestore (fills history gaps for old orders)
+    try {
+      var ordSnap = await getDocs(query(collection(db,'orders'), where('phone','==',phone)));
+      if(ordSnap.empty){
+        var altP = phone.startsWith('+') ? phone.slice(1) : '+'+phone;
+        ordSnap = await getDocs(query(collection(db,'orders'), where('phone','==',altP)));
+      }
+      ordSnap.docs.forEach(function(d){
+        var od = d.data();
+        var isDone = od.status==='done' || od.status==='cancelled';
+        if(isDone){
+          var alreadyIn = pastOrders.some(function(p){ return p.orderId===d.id; });
+          if(!alreadyIn){
+            pastOrders.push({
+              orderId: d.id,
+              orderNumber: od.orderNumber || null,
+              items: od.items || [],
+              total: od.total || 0,
+              status: od.status,
+              deliveryDate: od.deliveryDate || '',
+              createdAt: od.createdAt && od.createdAt.toDate ? od.createdAt.toDate().toISOString() : (od.createdAt||''),
+            });
+          }
+        }
+      });
+    } catch(e2){ console.log('Orders direct fetch:', e2.message); }
+
     if(activeOrder && (activeOrder.status === 'done' || activeOrder.status === 'cancelled')){
       var alreadyInPast = pastOrders.some(function(p){ return p.orderId === activeOrder.orderId; });
       if(!alreadyInPast) pastOrders = [activeOrder].concat(pastOrders);
@@ -1410,13 +1438,19 @@ window.loadProfile = async function(){
     // Past orders
     if(pastOrders.length){
       html += '<div style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:8px;margin-top:4px;">HISTORIAL</div>';
-      pastOrders.slice(0,5).forEach(function(o){
+      pastOrders.slice(0,10).forEach(function(o){
         var si = statusInfo[o.status]||statusInfo.done;
-        var itemsStr = (o.items||[]).map(function(i){ return i.name+' x'+i.qty; }).join(', ')||'-';
+        var itemsStr = (o.items||[]).map(function(i){ return (i.name||'Producto')+' x'+(i.qty||1); }).join(', ')||'Pedido';
+        var totalStr = (o.total !== undefined && o.total !== null) ? '$'+o.total : '';
+        var dateStr = o.deliveryDate || o.date || '';
+        var orderNum = o.orderNumber ? '#'+o.orderNumber : (o.orderId ? '#'+String(o.orderId).slice(-4) : '');
         html += '<div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 8px rgba(0,0,0,.06);display:flex;align-items:center;gap:12px;">';
         html += '<span style="font-size:1.3rem;">'+si.icon+'</span>';
-        html += '<div style="flex:1;"><div style="font-size:.84rem;font-weight:600;">'+itemsStr+'</div>';
-        html += '<div style="font-size:.75rem;color:var(--sub);">'+(o.deliveryDate||o.date||'')+' · $'+o.total+'</div></div>';
+        html += '<div style="flex:1;">';
+        if(orderNum) html += '<div style="font-size:.7rem;font-weight:700;color:var(--sub);margin-bottom:2px;">'+orderNum+'</div>';
+        html += '<div style="font-size:.84rem;font-weight:600;">'+itemsStr+'</div>';
+        html += '<div style="font-size:.75rem;color:var(--sub);">'+(dateStr ? dateStr+' · ' : '')+totalStr+'</div>';
+        html += '</div>';
         html += '<span style="font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:100px;background:'+si.bg+';color:'+si.color+';">'+si.label+'</span>';
         html += '</div>';
       });

@@ -1140,9 +1140,14 @@ window.openMotoAssignInline = function(ordId){
   assignOrdId2=ordId; selMotoId=null;
   const o=ordersCache.find(x=>x.id===ordId); if(!o) return;
   const motos=sedeMotorizados[o.sede]||[];
-  document.getElementById('oModalTitle').textContent=`Asignar motorizado · #${(o.id||'').slice(-6)}`;
+  document.getElementById('oModalTitle').textContent='Asignar motorizado · #'+(o.orderNumber||o.id.slice(-6));
+  if(!motos.length){
+    document.getElementById('oModalBody').innerHTML='<div style="text-align:center;padding:20px;color:var(--sub);">No hay motorizados configurados para esta sede.<br><small>Ve a la sección Motorizados para agregar uno.</small></div>';
+    document.getElementById('oModalFooter').innerHTML='<button class="btn btn-outline btn-sm" onclick="viewOrder(''+ordId+'')">← Volver</button>';
+    return;
+  }
   document.getElementById('oModalBody').innerHTML=`
-    <div style="font-size:.84rem;color:var(--sub);margin-bottom:14px;">Selecciona quién lleva el pedido <strong>#${(o.id||'').slice(-6)}</strong> a ${o.client}:</div>
+    <div style="font-size:.84rem;color:var(--sub);margin-bottom:14px;">Selecciona quién lleva el pedido <strong>#${o.orderNumber||o.id.slice(-6)}</strong> a ${o.client}:</div>
     <div style="display:grid;grid-template-columns:repeat(${Math.min(motos.length,3)},1fr);gap:8px;margin-bottom:16px;">
       ${motos.map(m=>`
         <div id="mc-${m.id}" onclick="selMoto2('${m.id}')" style="border:2px solid var(--gray2);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .2s;">
