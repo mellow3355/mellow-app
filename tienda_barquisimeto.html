@@ -625,6 +625,129 @@ body{
   .products-grid{grid-template-columns:1fr 1fr 1fr;}
   .section{padding:28px 22px;}
 }
+
+/* ── MISSING CLASSES (checkout, steps, totals) ── */
+
+/* Checkout screens */
+.checkout-screen{display:none;position:fixed;inset:0;z-index:400;background:var(--cream);overflow-y:auto;}
+.checkout-screen.active{display:block;}
+.checkout-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;background:var(--white);
+  position:sticky;top:0;z-index:10;
+  border-bottom:1px solid var(--gray2);
+  box-shadow:0 1px 8px rgba(42,16,24,.06);
+}
+.back-btn{
+  width:36px;height:36px;border-radius:50%;
+  border:none;background:var(--gray);
+  cursor:pointer;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-2);font-weight:600;
+}
+.co-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.1rem;font-weight:500;color:var(--text);
+  margin-bottom:4px;
+}
+.co-sub{font-size:.82rem;color:var(--sub);}
+.co-dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+
+/* Steps indicator */
+.steps-indicator{display:flex;align-items:center;gap:6px;}
+.step-circle{
+  width:28px;height:28px;border-radius:50%;
+  border:2px solid var(--gray2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;font-weight:700;color:var(--sub);
+  background:var(--white);transition:all .3s;
+}
+.step-circle.active{
+  border-color:var(--wine-d);background:var(--wine-d);color:#fff;
+}
+.step-circle.done{
+  border-color:var(--green);background:var(--green);color:#fff;
+}
+.step-conn{width:24px;height:2px;background:var(--gray2);transition:background .3s;}
+.step-conn.done{background:var(--green);}
+
+/* Delivery toggle */
+.del-toggle{margin-bottom:14px;}
+
+/* Pay methods */
+.pay-methods-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.pay-details-title{
+  font-size:.65rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--sub);
+  margin-bottom:8px;
+}
+.pay-details-text{font-size:.84rem;line-height:1.8;color:var(--text-2);}
+
+/* Total bar */
+.total-bar{
+  position:sticky;bottom:0;
+  background:var(--white);
+  border-top:1px solid var(--gray2);
+  padding:14px 20px;
+  box-shadow:0 -4px 20px rgba(42,16,24,.08);
+}
+.total-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+.total-label{font-size:.78rem;color:var(--sub);}
+.total-amount{
+  font-family:'Playfair Display',serif;
+  font-size:1.4rem;font-weight:500;color:var(--wine-d);
+}
+.subtotal-row{display:flex;justify-content:space-between;font-size:.82rem;color:var(--sub);margin-bottom:4px;}
+
+/* Upload area */
+.upload-area{
+  border:2px dashed var(--gray2);border-radius:var(--r);
+  padding:22px 16px;text-align:center;cursor:pointer;
+  transition:all .2s;background:var(--white);margin-bottom:10px;
+}
+.upload-area:hover,.upload-area.has-file{
+  border-color:var(--wine-d);background:var(--wine-l);
+}
+.upload-icon{font-size:1.8rem;margin-bottom:8px;}
+.upload-text{font-size:.8rem;color:var(--sub);}
+
+/* Extras */
+.extras-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.ei{font-size:1.4rem;margin-bottom:4px;}
+.en{font-size:.75rem;font-weight:500;color:var(--text-2);}
+.es{font-size:.7rem;color:var(--sub);margin-top:2px;}
+
+/* Success */
+.success-ring{
+  width:72px;height:72px;border-radius:50%;
+  background:var(--green-l);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;margin:0 auto 20px;
+}
+.success-body{padding:40px 24px;text-align:center;}
+
+/* Footer */
+.footer-logo{height:28px;margin-bottom:8px;}
+.footer-text{font-size:.72rem;color:rgba(255,255,255,.5);line-height:1.8;}
+
+/* Map */
+.map-wrap{border-radius:var(--r);overflow:hidden;margin-bottom:8px;border:1px solid var(--gray2);}
+.map-hint{font-size:.72rem;color:var(--sub);margin-top:4px;}
+
+/* Date/time field (override for dt-field) */
+.dt-field{margin-bottom:0;}
+.dt-field label{font-size:.72rem;font-weight:600;color:var(--text-2);display:block;margin-bottom:5px;}
+.dt-field input,.dt-field select{
+  width:100%;padding:10px 12px;
+  border:1.5px solid var(--gray2);border-radius:var(--r);
+  font-family:'DM Sans',sans-serif;font-size:.88rem;
+  color:var(--text);background:var(--white);outline:none;
+  transition:border-color .2s;
+}
+.dt-field input:focus,.dt-field select:focus{border-color:var(--wine-d);}
+.dt-err{font-size:.7rem;color:#c0392b;margin-top:4px;display:none;}
+.dt-field.invalid .dt-err{display:block;}
+.dt-field.invalid input,.dt-field.invalid select{border-color:#c0392b;}
 </style>
 </head>
 <body>
