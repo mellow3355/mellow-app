@@ -1178,11 +1178,33 @@ async function completeOrder(){
     } catch(numErr){ console.log('Order counter error:', numErr.message); }
 
     // Save to Firestore
-    await addDoc(collection(db,'orders'), orderData);
+    var newOrderRef = await addDoc(collection(db,'orders'), orderData);
 
-    // Save/update client profile in 'clients' collection (no auth needed)
+    // Update client doc with the real orderId
+    try {
+      if(window._pendingClientId && window._pendingClientData){
+        var summary = window._pendingClientData.activeOrderSummary;
+        if(summary) summary.orderId = newOrderRef.id;
+        await setDoc(doc(db,'clients',window._pendingClientId),
+          { activeOrderSummary: summary }, {merge:true});
+      }
+    } catch(e){ console.log('Client orderId update error:', e.message); }
+
+    // Save/update client profile in 'clients' collection (public - no auth needed)
     try {
       var clientId = phone.replace(/[^0-9]/g,'');
+      // Build order summary to store in client doc (for self-lookup without auth)
+      var orderSummary = {
+        orderId: '', // will be updated after addDoc
+        orderNumber: orderData.orderNumber || 0,
+        items: orderData.items || [],
+        total: orderData.total || 0,
+        status: 'new',
+        deliveryDate: orderData.deliveryDate || '',
+        deliveryTime: orderData.deliveryTime || '',
+        sede: SEDE_KEY,
+        createdAt: new Date().toISOString(),
+      };
       var clientData = {
         name: name,
         phone: phone,
@@ -1190,9 +1212,12 @@ async function completeOrder(){
         birthdate: (document.getElementById('coBirthdate')&&document.getElementById('coBirthdate').value)||'',
         sede: SEDE_KEY,
         hasActiveOrder: true,
+        activeOrderSummary: orderSummary,
         lastOrder: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
+      window._pendingClientId = clientId;
+      window._pendingClientData = clientData;
       await setDoc(doc(db,'clients',clientId), clientData, {merge:true});
     } catch(clientErr){ console.log('Client save error:', clientErr.message); }
 

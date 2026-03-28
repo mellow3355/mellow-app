@@ -1041,13 +1041,20 @@ window.chgStatus = async function(id, newStatus){
     const o = ordersCache.find(x=>x.id===id); if(!o) return;
     o.status = newStatus;
 
-    // When order is done or cancelled, clear hasActiveOrder on client
-    if(newStatus==='done' || newStatus==='cancelled'){
-      try {
-        var clientId = (o.phone||'').replace(/[^0-9]/g,'');
-        if(clientId) await updateDoc(doc(db,'clients',clientId), { hasActiveOrder: false });
-      } catch(ce){ console.log('Client update error:', ce.message); }
-    }
+    // Update client's active order status so they can see it in their profile
+    try {
+      var clientId = (o.phone||'').replace(/[^0-9]/g,'');
+      if(clientId){
+        var clientUpdate = { 'activeOrderSummary.status': newStatus };
+        if(newStatus==='done'||newStatus==='cancelled'){
+          clientUpdate.hasActiveOrder = false;
+        }
+        if(o.motoName && newStatus==='transit'){
+          clientUpdate['activeOrderSummary.motoName'] = o.motoName;
+        }
+        await updateDoc(doc(db,'clients',clientId), clientUpdate);
+      }
+    } catch(ce){ console.log('Client status update error:', ce.message); }
 
     if(newStatus==='confirmed'){
       const msg=encodeURIComponent('Hola '+(o.client||'').split(' ')[0]+' 👋🏼\n\n✅ *Su pedido ya fue confirmado.*\nCualquier duda estamos atentos.\n\n¡Gracias por elegir Mellow! 🎂');
