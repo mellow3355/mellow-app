@@ -553,41 +553,45 @@ function populateTimeSelect(selectEl, dateStr){
 
 /* ══ PRODUCT RENDERING ══ */
 function renderProducts(){
-  const grid = document.getElementById('productsGrid');
+  var grid = document.getElementById('productsGrid');
   if(!PRODUCTS.length){
-    grid.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub);grid-column:1/-1;">Cargando productos...</div>';
+    grid.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;grid-column:1/-1;">Cargando productos...</div>';
     return;
   }
-  grid.innerHTML=PRODUCTS.map(function(p){
+  var html = '';
+  for(var i=0; i<PRODUCTS.length; i++){
+    var p = PRODUCTS[i];
     var sid = String(p.id);
-    var outOfStock = !p.available || (p.stock !== undefined && p.stock <= 0);
-    var stockLabel = '';
-    if(p.stock !== undefined && p.stock > 0 && p.stock <= 5){
-      stockLabel = '<div style="position:absolute;top:8px;left:8px;background:#fff3cd;color:#856404;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:100px;">Últimos '+p.stock+'</div>';
+    var outOfStock = !p.available || (typeof p.stock !== 'undefined' && p.stock <= 0);
+
+    html += '<div class="p-card' + (outOfStock ? ' sold-out' : '') + '"';
+    if(!outOfStock) html += ' onclick="openProduct(\'' + sid + '\')"';
+    html += '>';
+
+    if(outOfStock) html += '<div class="sold-tag">Agotado</div>';
+
+    if(typeof p.stock !== 'undefined' && p.stock > 0 && p.stock <= 5){
+      html += '<div style="position:absolute;top:8px;left:8px;background:#fff3cd;color:#856404;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:100px;">Últimos ' + p.stock + '</div>';
     }
-    var cardClass = 'p-card' + (outOfStock ? ' sold-out' : '');
-    var onclickAttr = outOfStock ? '' : 'onclick="openProduct(''+sid+'')"';
-    var soldTag = outOfStock ? '<div class="sold-tag">Agotado</div>' : '';
-    var qtyHtml = '';
+
+    html += '<img class="p-img" src="' + (p.img || '') + '" alt="' + p.name + '" loading="lazy" onerror="this.style.background='#ede0c8'">';
+    html += '<div class="p-body">';
+    html += '<div class="p-name">' + p.name + '</div>';
+    html += '<div class="p-price">REF ' + (p.price || 0).toFixed(2) + '</div>';
+    html += '</div>';
+
     if(!outOfStock){
-      qtyHtml = '<div class="p-qty" id="pqty-'+sid+'">'
-        + '<button class="qty-btn" onclick="event.stopPropagation();changeQtyCard(''+sid+'',-1)">−</button>'
-        + '<span class="qty-num" id="pqnum-'+sid+'">0</span>'
-        + '<button class="qty-btn" onclick="event.stopPropagation();changeQtyCard(''+sid+'',1)">+</button>'
-        + '</div>'
-        + '<button class="p-add" id="padd-'+sid+'" onclick="event.stopPropagation();openProduct(''+sid+'')">+</button>';
+      html += '<div class="p-qty" id="pqty-' + sid + '">';
+      html += '<button class="qty-btn" onclick="event.stopPropagation();changeQtyCard(\'' + sid + '\',-1)">−</button>';
+      html += '<span class="qty-num" id="pqnum-' + sid + '">0</span>';
+      html += '<button class="qty-btn" onclick="event.stopPropagation();changeQtyCard(\'' + sid + '\',1)">+</button>';
+      html += '</div>';
+      html += '<button class="p-add" id="padd-' + sid + '" onclick="event.stopPropagation();openProduct(\'' + sid + '\')">+</button>';
     }
-    return '<div class="'+cardClass+'" '+onclickAttr+'>'
-      + soldTag
-      + stockLabel
-      + '<img class="p-img" src="'+(p.img||'')+'" alt="'+p.name+'" loading="lazy" onerror="this.style.background='var(--warm)'">'
-      + '<div class="p-body">'
-      + '<div class="p-name">'+p.name+'</div>'
-      + '<div class="p-price">REF '+(p.price||0).toFixed(2)+'</div>'
-      + '</div>'
-      + qtyHtml
-      + '</div>';
-  }).join('');
+
+    html += '</div>';
+  }
+  grid.innerHTML = html;
 }
 /* ══ PRODUCT MODAL ══ */
 function openProduct(id){
