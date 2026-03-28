@@ -294,16 +294,16 @@ body{
   display:none;position:fixed;inset:0;z-index:300;
 }
 .cart-panel.open{display:block;}
-.cart-overlay{position:absolute;inset:0;background:rgba(28,18,16,.5);}
+.cart-overlay{position:absolute;inset:0;background:rgba(28,18,16,.45);}
 .cart-sheet{
-  position:absolute;right:0;top:0;bottom:0;
+  position:fixed;right:0;top:0;bottom:0;
   width:100%;max-width:380px;
   background:var(--white);
+  z-index:1;
   display:flex;flex-direction:column;
-  animation:slideRight .3s cubic-bezier(.22,1,.36,1);
   box-shadow:-8px 0 40px rgba(42,16,24,.15);
 }
-@keyframes slideRight{from{transform:translateX(100%);}to{transform:translateX(0);}}
+
 .cart-header{
   display:flex;align-items:center;justify-content:space-between;
   padding:16px 20px;
