@@ -1262,15 +1262,27 @@ window.openProfile = async function(){
   document.getElementById('profileScreen').style.display='block';
   // Pre-fill phone if stored
   var phoneEl = document.getElementById('profilePhone');
-  if(phoneEl && clientPhone) phoneEl.value = clientPhone;
-  if(clientPhone) loadProfile();
+  var savedNum = localStorage.getItem('mellow_phone_num');
+  var savedCode = localStorage.getItem('mellow_phone_code') || '+58';
+  if(phoneEl && savedNum) phoneEl.value = savedNum;
+  var codeEl = document.getElementById('profileCountryCode');
+  if(codeEl && savedCode){
+    for(var i=0;i<codeEl.options.length;i++){
+      if(codeEl.options[i].value===savedCode){ codeEl.selectedIndex=i; break; }
+    }
+  }
+  if(savedNum && clientPhone) loadProfile();
 };
 
 window.loadProfile = async function(){
-  var phone = document.getElementById('profilePhone').value.trim();
-  if(!phone){ alert('Ingresa tu numero de WhatsApp'); return; }
+  var profileNum = document.getElementById('profilePhone').value.trim().replace(/^0+/,'');
+  var profileCode = (document.getElementById('profileCountryCode') && document.getElementById('profileCountryCode').value) || '+58';
+  var phone = profileCode + profileNum;
+  if(!profileNum || profileNum.length < 7){ alert('Ingresa tu numero de WhatsApp'); return; }
   clientPhone = phone;
   localStorage.setItem('mellow_phone', phone);
+  localStorage.setItem('mellow_phone_code', profileCode);
+  localStorage.setItem('mellow_phone_num', profileNum);
 
   var resultsEl = document.getElementById('profileResults');
   resultsEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--sub);">Buscando tus pedidos...</div>';
@@ -1432,8 +1444,10 @@ window.calcCashChange = calcCashChange;
 
 /* ══ ORDER TRACKING ══ */
 window.trackOrder = async function(){
-  var phone = document.getElementById('trackPhone').value.trim().replace(/\s/g,'');
-  if(!phone){ alert('Ingresa tu numero de WhatsApp'); return; }
+  var trackNum = document.getElementById('trackPhone').value.trim().replace(/[^0-9]/g,'');
+  var trackCode = (document.getElementById('trackCountryCode') && document.getElementById('trackCountryCode').value) || '+58';
+  var phone = trackCode + trackNum;
+  if(!trackNum || trackNum.length < 7){ alert('Ingresa tu numero de WhatsApp'); return; }
   var resultsEl = document.getElementById('trackResults');
   resultsEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--sub);">Buscando...</div>';
   
@@ -1526,12 +1540,26 @@ window.trackOrder = async function(){
     <div id="profileLoginBox" style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 16px rgba(0,0,0,.08);margin-bottom:16px;">
       <div style="font-size:.9rem;font-weight:700;margin-bottom:4px;">Ingresa tu WhatsApp</div>
       <div style="font-size:.78rem;color:var(--sub);margin-bottom:14px;">Para ver tus pedidos activos e historial</div>
-      <div style="display:flex;gap:8px;">
-        <input type="tel" id="profilePhone" placeholder="+58 424 270 8381"
-          style="flex:1;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:10px;font-family:Outfit,sans-serif;font-size:.9rem;outline:none;"
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="profileCountryCode" style="width:110px;padding:11px 8px;border:1.5px solid var(--gray2);border-radius:10px;font-family:Outfit,sans-serif;font-size:.85rem;background:#fff;outline:none;flex-shrink:0;">
+          <option value="+58" selected>🇻🇪 +58</option>
+          <option value="+1">🇺🇸 +1</option>
+          <option value="+34">🇪🇸 +34</option>
+          <option value="+57">🇨🇴 +57</option>
+          <option value="+51">🇵🇪 +51</option>
+          <option value="+52">🇲🇽 +52</option>
+          <option value="+54">🇦🇷 +54</option>
+          <option value="+56">🇨🇱 +56</option>
+          <option value="+593">🇪🇨 +593</option>
+          <option value="+507">🇵🇦 +507</option>
+        </select>
+        <input type="tel" id="profilePhone" placeholder="4242708381"
+          style="flex:1;min-width:120px;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:10px;font-family:Outfit,sans-serif;font-size:.9rem;outline:none;"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'')"
           onkeydown="if(event.key==='Enter')loadProfile()"/>
         <button onclick="loadProfile()" style="padding:0 18px;background:var(--wine-d);color:#fff;border:none;border-radius:10px;font-family:Outfit,sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;">Ver pedidos</button>
       </div>
+      <div style="font-size:.72rem;color:var(--sub);margin-top:6px;">Ingresa solo los números sin el código de país</div>
     </div>
     <div id="profileResults"></div>
   </div>
@@ -1546,10 +1574,25 @@ window.trackOrder = async function(){
   <div style="padding:20px;">
     <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:16px;">
       <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:8px;">Ingresa tu numero de WhatsApp</div>
-      <div style="display:flex;gap:8px;">
-        <input type="tel" id="trackPhone" placeholder="+58 424 270 8381" style="flex:1;padding:12px 14px;border:1.5px solid var(--gray2);border-radius:10px;font-family:Outfit,sans-serif;font-size:.9rem;outline:none;"/>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="trackCountryCode" style="width:110px;padding:11px 8px;border:1.5px solid var(--gray2);border-radius:10px;font-family:Outfit,sans-serif;font-size:.85rem;background:#fff;outline:none;flex-shrink:0;">
+          <option value="+58" selected>🇻🇪 +58</option>
+          <option value="+1">🇺🇸 +1</option>
+          <option value="+34">🇪🇸 +34</option>
+          <option value="+57">🇨🇴 +57</option>
+          <option value="+51">🇵🇪 +51</option>
+          <option value="+52">🇲🇽 +52</option>
+          <option value="+54">🇦🇷 +54</option>
+          <option value="+56">🇨🇱 +56</option>
+          <option value="+593">🇪🇨 +593</option>
+          <option value="+507">🇵🇦 +507</option>
+        </select>
+        <input type="tel" id="trackPhone" placeholder="4242708381"
+          style="flex:1;min-width:120px;padding:12px 14px;border:1.5px solid var(--gray2);border-radius:10px;font-family:Outfit,sans-serif;font-size:.9rem;outline:none;"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'')"/>
         <button onclick="trackOrder()" style="padding:0 18px;background:var(--wine-d);color:#fff;border:none;border-radius:10px;font-family:Outfit,sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;white-space:nowrap;">Buscar</button>
       </div>
+      <div style="font-size:.72rem;color:var(--sub);margin-top:6px;">Solo los números sin el código de país</div>
     </div>
     <div id="trackResults"></div>
   </div>
