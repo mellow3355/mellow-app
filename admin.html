@@ -577,7 +577,10 @@ textarea{min-height:70px;resize:vertical;}
       </div>
       <div class="field"><label>Nombre</label><input type="text" id="epName" placeholder="Ej: Tiramisú"/></div>
       <div class="field"><label>Descripción</label><textarea id="epDesc" placeholder="Ingredientes y características..."></textarea></div>
-      <div class="field"><label>Precio (USD $)</label><input type="number" id="epPrice" step="0.5" placeholder="0.00"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field"><label>Precio (USD $)</label><input type="number" id="epPrice" step="0.5" placeholder="0.00"/></div>
+        <div class="field"><label>Stock disponible</label><input type="number" id="epStock" min="0" placeholder="Ej: 10"/></div>
+      </div>
       <div class="field"><label>Categoría</label><select id="epCat"><option>Cake Box</option><option>Drinks</option><option>Especiales</option></select></div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
         <span style="font-size:.85rem;font-weight:600;">Disponible</span>
@@ -1088,7 +1091,12 @@ function renderStoreEditor(){
       <div class="pe-info">
         <div class="pe-name">${p.name}</div>
         <div class="pe-cat">${p.cat||'Sin categoría'}</div>
-        <div class="pe-price">$${p.price||0}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+          <div class="pe-price">$${p.price||0}</div>
+          <span style="font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:100px;background:${(p.stock||0)<=0?'var(--red-l)':(p.stock||0)<=5?'var(--yellow-l)':'var(--green-l)'};color:${(p.stock||0)<=0?'var(--red)':(p.stock||0)<=5?'var(--yellow)':'var(--green)'};">
+            ${(p.stock||0)<=0?'Agotado':'Stock: '+(p.stock||0)}
+          </span>
+        </div>
       </div>
       <div class="pe-actions">
         <label class="toggle" title="${p.available?'Disponible':'Agotado'}">
@@ -1145,6 +1153,7 @@ window.editProduct = function(id){
   document.getElementById('epName').value=p.name||'';
   document.getElementById('epDesc').value=p.desc||'';
   document.getElementById('epPrice').value=p.price||0;
+  document.getElementById('epStock').value=p.stock||0;
   document.getElementById('epCat').value=p.cat||'Cake Box';
   document.getElementById('epAvailable').checked=!!p.available;
   if(p.img){ document.getElementById('prodImgPreview').src=p.img; document.getElementById('prodImgPreview').style.display='block'; document.getElementById('prodImgPlaceholder').style.display='none'; }
@@ -1164,6 +1173,7 @@ window.saveProduct = async function(){
   const data={
     name, desc:document.getElementById('epDesc').value.trim(),
     price:parseFloat(document.getElementById('epPrice').value)||0,
+    stock:parseInt(document.getElementById('epStock').value)||0,
     cat:document.getElementById('epCat').value,
     available:document.getElementById('epAvailable').checked,
   };
