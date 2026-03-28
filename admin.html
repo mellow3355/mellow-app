@@ -541,7 +541,7 @@ textarea{min-height:70px;resize:vertical;}
         <div class="page-header"><h1>Clientes</h1><button class="btn btn-outline btn-sm" onclick="exportClients()">⬇ Exportar CSV</button></div>
         <div class="card">
           <div class="toolbar"><div class="search-box"><span>🔍</span><input type="text" id="clientSearch" placeholder="Buscar..." oninput="renderClients()"/></div></div>
-          <div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Cumpleaños</th><th>Sede</th><th>Órdenes</th><th>Total</th><th></th></tr></thead><tbody id="clientsBody"></tbody></table></div>
+          <div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Cumpleaños</th><th>Sede</th><th>Órdenes</th><th>Total</th><th></th></tr></thead><tbody id="clientsBody"></tbody></table></div>
         </div>
       </div>
 
@@ -843,7 +843,7 @@ window.nav = function(name){
   if(name==='pagos'){ loadPagos(); var pt=document.getElementById('pagosCardTitle'); if(pt){ var sk=viewSede==='all'?'caracas':viewSede; pt.textContent='Pago Movil - '+((SEDES[sk]&&SEDES[sk].label)||sk); } }
   if(name==='horarios') renderSchedule();
   if(name==='tasa'){ renderTasaHist(); updateTasaDisplay(); }
-  if(name==='clients') renderClients();
+  if(name==='clients') loadClientsFromFirebase();
   if(name==='analytics') renderAnalytics();
 };
 
@@ -1481,27 +1481,82 @@ function renderTasaHist(){ const el=document.getElementById('tasaHistBody'); if(
 window.calcConv=function(from){ if(!tasaActual){toast('⚠️ Establece la tasa primero');return;} if(from==='usd'){const u=parseFloat(document.getElementById('calcUsd').value)||0;document.getElementById('calcBsRes').textContent=(u*tasaActual).toFixed(2)+' Bs.';} };
 
 /* ══ CLIENTS ══ */
+let clientsCache = [];
+
+async function loadClientsFromFirebase(){
+  try {
+    var snap = await getDocs(collection(db,'clients'));
+    clientsCache = snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+    renderClients();
+  } catch(e){
+    // Fallback: build from orders
+    console.log('Loading clients from orders:', e.message);
+    var map={};
+    ordersCache.forEach(function(o){
+      if(!o.phone) return;
+      if(!map[o.phone]) map[o.phone]={name:o.client,phone:o.phone,email:o.email||'',birthdate:o.birthdate||'',sede:o.sede,orderCount:0,total:0};
+      map[o.phone].orderCount++;
+      map[o.phone].total+=(o.total||0);
+    });
+    clientsCache = Object.values(map);
+    renderClients();
+  }
+}
+
+function fmtBdSafe(bd){
+  if(!bd||bd.trim()==='') return '-';
+  // Try parsing
+  var d = new Date(bd + 'T12:00:00');
+  if(isNaN(d.getTime())) return '-';
+  var y = d.getFullYear();
+  if(y < 1900 || y > new Date().getFullYear()) return '-';
+  return d.toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric'});
+}
+
 function renderClients(){
-  const q=(document.getElementById('clientSearch')?.value||'').toLowerCase();
-  const orders=getVisibleOrders();
-  const map={};
-  orders.forEach(o=>{ if(!o.phone) return; if(!map[o.phone]) map[o.phone]={name:o.client,phone:o.phone,birthdate:o.birthdate,sede:o.sede,orders:0,total:0}; map[o.phone].orders++; map[o.phone].total+=(o.total||0); });
-  const list=Object.values(map).filter(c=>!q||(c.name||'').toLowerCase().includes(q)||c.phone.includes(q));
-  document.getElementById('clientsBody').innerHTML=list.map(c=>`
-    <tr><td><strong>${c.name||'—'}</strong>${isBdToday(c.birthdate)?' 🎂':''}</td>
-    <td><a href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank" style="color:var(--blue)">${c.phone}</a></td>
-    <td style="font-size:.8rem">${fmtBd(c.birthdate)}</td>
-    <td>${sedeBadgeHtml(c.sede)}</td>
-    <td><strong>${c.orders}</strong></td>
-    <td><strong>$${c.total}</strong></td>
-    <td><a href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank"><button class="btn btn-green-soft btn-xs">💬</button></a></td></tr>`).join('');
+  var q=(document.getElementById('clientSearch')?.value||'').toLowerCase();
+  var list = clientsCache.length > 0 ? clientsCache : [];
+  if(!list.length){
+    // Build from orders if no clients collection yet
+    var map={};
+    getVisibleOrders().forEach(function(o){
+      if(!o.phone) return;
+      if(!map[o.phone]) map[o.phone]={name:o.client,phone:o.phone,email:o.email||'',birthdate:o.birthdate||'',sede:o.sede,orderCount:0,total:0};
+      map[o.phone].orderCount++;
+      map[o.phone].total+=(o.total||0);
+    });
+    list = Object.values(map);
+  }
+  list = list.filter(function(c){ return !q||(c.name||'').toLowerCase().includes(q)||c.phone.includes(q)||(c.email||'').toLowerCase().includes(q); });
+  document.getElementById('clientsBody').innerHTML=list.map(function(c){
+    var bd = fmtBdSafe(c.birthdate||'');
+    var bdToday2 = isBdToday(c.birthdate||'');
+    var phone = (c.phone||'').replace(/\D/g,'');
+    return '<tr>'
+      +'<td><strong>'+(c.name||'-')+'</strong>'+(bdToday2?' 🎂':'')+'</td>'
+      +'<td><a href="https://wa.me/'+phone+'" target="_blank" style="color:var(--blue)">'+(c.phone||'-')+'</a></td>'
+      +'<td style="font-size:.78rem;color:var(--sub)">'+(c.email||'-')+'</td>'
+      +'<td style="font-size:.8rem">'+bd+'</td>'
+      +'<td>'+sedeBadgeHtml(c.sede)+'</td>'
+      +'<td><strong>'+(c.orderCount||c.orders||0)+'</strong></td>'
+      +'<td><strong>$'+(c.total||0)+'</strong></td>'
+      +'<td>'
+        +'<a href="https://wa.me/'+phone+'" target="_blank"><button class="btn btn-green-soft btn-xs">💬</button></a> '
+        +'<a href="mailto:'+(c.email||'')+'" target="_blank"><button class="btn btn-blue-soft btn-xs" '+(c.email?'':'disabled')+'>✉️</button></a>'
+      +'</td>'
+    +'</tr>';
+  }).join('')||'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--sub);">Sin clientes aún</td></tr>';
 }
 window.exportClients=function(){
-  const orders=getVisibleOrders(); const map={};
-  orders.forEach(o=>{ if(!o.phone) return; if(!map[o.phone]) map[o.phone]={name:o.client,phone:o.phone,birthdate:o.birthdate,sede:o.sede,orders:0,total:0}; map[o.phone].orders++; map[o.phone].total+=(o.total||0); });
-  const rows=[['Nombre','Teléfono','Cumpleaños','Sede','Órdenes','Total'],...Object.values(map).map(c=>[c.name,c.phone,c.birthdate||'',SEDES[c.sede]?.label||c.sede,c.orders,c.total])];
-  const csv=rows.map(r=>r.join(',')).join('\n');
-  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download='mellow_clientes.csv'; a.click();
+  var src = clientsCache.length > 0 ? clientsCache : (function(){
+    var map={};
+    getVisibleOrders().forEach(function(o){ if(!o.phone) return; if(!map[o.phone]) map[o.phone]={name:o.client,phone:o.phone,email:o.email||'',birthdate:o.birthdate||'',sede:o.sede,orderCount:0,total:0}; map[o.phone].orderCount++; map[o.phone].total+=(o.total||0); });
+    return Object.values(map);
+  })();
+  var rows=[['Nombre','Telefono','Email','Cumpleanos','Sede','Ordenes','Total']];
+  src.forEach(function(c){ rows.push([c.name||'',c.phone||'',c.email||'',c.birthdate||'',SEDES[c.sede]&&SEDES[c.sede].label||c.sede||'',c.orderCount||c.orders||0,c.total||0]); });
+  var csv=rows.map(function(r){ return r.map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv); a.download='mellow_clientes.csv'; a.click();
 };
 
 /* ══ ANALYTICS ══ */

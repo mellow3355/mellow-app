@@ -294,9 +294,43 @@ footer{background:#110d06;padding:36px 20px 28px;text-align:center;border-top:1p
     <div class="co-sub">¿Cómo te contactamos?</div>
 
     <div class="field" id="f-name"><label>Nombre completo</label><input type="text" id="coName" placeholder="Ej: María González"/><div class="err">Ingresa tu nombre</div></div>
-    <div class="field" id="f-phone"><label>WhatsApp</label><input type="tel" id="coPhone" placeholder="+58 424 270 8381"/><div class="err">Ingresa tu número</div></div>
+    <div class="field" id="f-phone">
+      <label>WhatsApp</label>
+      <div style="display:flex;gap:8px;">
+        <select id="coCountryCode" style="width:110px;padding:12px 8px;border:1.5px solid var(--gray2);border-radius:10px;font-family:Outfit,sans-serif;font-size:.85rem;color:var(--text);background:#fff;outline:none;flex-shrink:0;">
+          <option value="+58" selected>🇻🇪 +58</option>
+          <option value="+1">🇺🇸 +1</option>
+          <option value="+34">🇪🇸 +34</option>
+          <option value="+57">🇨🇴 +57</option>
+          <option value="+51">🇵🇪 +51</option>
+          <option value="+52">🇲🇽 +52</option>
+          <option value="+54">🇦🇷 +54</option>
+          <option value="+56">🇨🇱 +56</option>
+          <option value="+593">🇪🇨 +593</option>
+          <option value="+507">🇵🇦 +507</option>
+          <option value="+503">🇸🇻 +503</option>
+          <option value="+502">🇬🇹 +502</option>
+          <option value="+506">🇨🇷 +506</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+39">🇮🇹 +39</option>
+          <option value="+55">🇧🇷 +55</option>
+          <option value="+598">🇺🇾 +598</option>
+          <option value="+595">🇵🇾 +595</option>
+          <option value="+591">🇧🇴 +591</option>
+        </select>
+        <input type="tel" id="coPhone" placeholder="4242708381" style="flex:1;" oninput="this.value=this.value.replace(/[^0-9]/g,'')"/>
+      </div>
+      <div class="err">Ingresa tu número</div>
+    </div>
     <div class="field"><label>Correo (opcional)</label><input type="email" id="coEmail" placeholder="tu@correo.com"/></div>
-    <div class="field"><label>Fecha de nacimiento</label><input type="date" id="coBirthdate"/></div>
+    <div class="field">
+      <label>Fecha de nacimiento</label>
+      <input type="date" id="coBirthdate"
+        id="birthdateInput"
+        min="1900-01-01"
+        onchange="validateBirthdate(this)"/>
+      <div id="birthdateErr" style="font-size:.73rem;color:#c0392b;margin-top:4px;display:none;">Fecha inválida</div>
+    </div>
 
     <div style="height:1px;background:var(--gray2);margin:18px 0;"></div>
     <!-- Date/time is chosen when adding to cart, shown here as summary -->
@@ -651,7 +685,8 @@ function renderProducts(){
   for(var i=0; i<PRODUCTS.length; i++){
     var p = PRODUCTS[i];
     var sid = String(p.id);
-    var outOfStock = !p.available || (typeof p.stock !== 'undefined' && p.stock <= 0);
+    var stockVal = (p.stock !== undefined && p.stock !== null) ? Number(p.stock) : 999;
+    var outOfStock = !p.available || stockVal <= 0;
 
     html += '<div class="p-card' + (outOfStock ? ' sold-out' : '') + '"';
     if(!outOfStock) html += ' onclick="openProduct(\'' + sid + '\')"';
@@ -659,8 +694,8 @@ function renderProducts(){
 
     if(outOfStock) html += '<div class="sold-tag">Agotado</div>';
 
-    if(typeof p.stock !== 'undefined' && p.stock > 0 && p.stock <= 5){
-      html += '<div style="position:absolute;top:8px;left:8px;background:#fff3cd;color:#856404;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:100px;">Últimos ' + p.stock + '</div>';
+    if(stockVal > 0 && stockVal <= 5){
+      html += '<div style="position:absolute;top:8px;left:8px;background:#fff3cd;color:#856404;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:100px;">Últimos ' + stockVal + '</div>';
     }
 
     html += '<img class="p-img" src="' + (p.img || '') + '" alt="' + p.name + '" loading="lazy">';
@@ -850,7 +885,10 @@ function req(fieldId,val){const ok=val&&val.trim();document.getElementById(field
 function goStep2(){
   let ok=true;
   if(!req('f-name',document.getElementById('coName').value)) ok=false;
-  if(!req('f-phone',document.getElementById('coPhone').value)) ok=false;
+  var phoneNum = document.getElementById('coPhone').value.trim();
+  var phoneCode = document.getElementById('coCountryCode').value;
+  if(!phoneNum || phoneNum.length < 7){document.getElementById('f-phone').classList.add('invalid');ok=false;}
+  else document.getElementById('f-phone').classList.remove('invalid');
   // Date/time comes from cart items - just verify cart has items with dates
   var hasDate = cart.some(function(c){ return c.date; });
   if(!hasDate){ alert('Agrega productos al carrito primero'); ok=false; }
@@ -968,7 +1006,7 @@ function applyCoupon(){
 
 /* FIREBASE */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getFirestore, collection, addDoc, updateDoc, doc, serverTimestamp, getDocs, getDoc, query, orderBy, where, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getFirestore, collection, addDoc, updateDoc, setDoc, doc, serverTimestamp, getDocs, getDoc, query, orderBy, where, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
 const FB_CONFIG = {
@@ -1042,7 +1080,9 @@ async function completeOrder(){
   if(!selectedPayMethod){document.getElementById('payErr').style.display='block';return;}
 
   // Read phone once at the top
-  const phone=document.getElementById('coPhone').value.trim();
+  var phoneNum2 = document.getElementById('coPhone').value.trim().replace(/^0+/,'');
+  var phoneCode2 = document.getElementById('coCountryCode').value;
+  const phone = phoneCode2 + phoneNum2;
 
   // Check if client already has an active order
   if(phone){
@@ -1120,6 +1160,26 @@ async function completeOrder(){
   try {
     // Save to Firestore
     await addDoc(collection(db,'orders'), orderData);
+
+    // Save/update client profile in 'clients' collection
+    try {
+      var clientData = {
+        name: name,
+        phone: phone,
+        email: document.getElementById('coEmail')?.value?.trim() || '',
+        birthdate: document.getElementById('coBirthdate')?.value || '',
+        sede: SEDE_KEY,
+        lastOrder: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      // Use phone as document ID for easy lookup and deduplication
+      var clientId = phone.replace(/[^0-9]/g,'');
+      await setDoc(doc(db,'clients',clientId), clientData, {merge:true});
+      // Increment order count
+      await updateDoc(doc(db,'clients',clientId), {
+        orderCount: (window._clientOrderCount || 0) + 1
+      });
+    } catch(clientErr){ console.log('Client save error:', clientErr.message); }
 
     // Reduce stock for each item ordered
     try {
@@ -1321,6 +1381,23 @@ async function checkActiveOrder(phone){
     return hasActive;
   } catch(e){ console.log('checkActiveOrder error:', e.message); return false; }
 }
+
+function validateBirthdate(input){
+  var val = input.value;
+  var errEl = document.getElementById('birthdateErr');
+  if(!val){ if(errEl) errEl.style.display='none'; return; }
+  var d = new Date(val + 'T12:00:00');
+  var today = new Date();
+  var minDate = new Date('1900-01-01');
+  if(isNaN(d.getTime()) || d > today || d < minDate){
+    input.value = '';
+    if(errEl) errEl.style.display='block';
+    setTimeout(function(){ if(errEl) errEl.style.display='none'; }, 3000);
+  } else {
+    if(errEl) errEl.style.display='none';
+  }
+}
+window.validateBirthdate = validateBirthdate;
 
 /* ══ EXPOSE FUNCTIONS TO HTML onclick handlers ══ */
 window.openProduct = openProduct;
