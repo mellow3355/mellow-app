@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mellow Barquisimeto — Pedidos</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --wine:#3d1a24;--wine-d:#2a1018;--wine-m:#5c2535;
+  --cream:#faf6f0;--warm:#ede0c8;--white:#fff;
+  --gray:#f5f5f5;--gray2:#e8e8e8;--text:#1c1210;--sub:#6b5b50;
+  --r:14px;--shadow:0 4px 24px rgba(61,26,36,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Outfit',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:100;background:var(--white);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:60px;border-bottom:1px solid var(--gray2);box-shadow:0 2px 12px rgba(0,0,0,.06);}
+.topbar-logo{height:36px;} .topbar-logo img{height:100%;width:auto;}
+.topbar-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:400;color:var(--wine-d);}
+.topbar-cart{position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;font-size:1.3rem;}
+.cart-badge{position:absolute;top:4px;right:4px;background:var(--wine-d);color:#fff;font-size:.6rem;font-weight:700;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;}
+.cart-badge.show{display:flex;}
+
+/* HERO BANNER */
+.hero{width:100%;aspect-ratio:16/7;overflow:hidden;position:relative;display:block;}
+.hero img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* PRODUCTS */
+.section{padding:24px 18px;}
+.sec-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:1.55rem;font-weight:400;color:var(--text);}
+.products-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.p-card{background:var(--white);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:transform .25s,box-shadow .25s;position:relative;}
+.p-card:hover:not(.sold-out){transform:translateY(-3px);box-shadow:0 8px 28px rgba(61,26,36,.18);}
+.p-card.sold-out{opacity:.6;cursor:default;}
+.p-img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--warm);}
+.p-body{padding:10px 12px 36px;}
+.p-name{font-size:.84rem;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:4px;}
+.p-price{font-size:.78rem;font-weight:700;color:var(--wine-d);}
+.p-add{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--wine-d);color:#fff;font-size:1.1rem;position:absolute;bottom:10px;right:10px;border:none;cursor:pointer;}
+.sold-tag{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:100px;}
+.p-qty{display:none;align-items:center;position:absolute;bottom:8px;right:8px;background:var(--white);border:1.5px solid var(--wine-d);border-radius:100px;overflow:hidden;}
+.p-qty.show{display:flex;}
+.qty-btn{width:28px;height:26px;border:none;background:transparent;font-size:.9rem;cursor:pointer;color:var(--wine-d);font-weight:700;display:flex;align-items:center;justify-content:center;}
+.qty-num{font-size:.8rem;font-weight:700;color:var(--wine-d);min-width:18px;text-align:center;}
+
+/* PRODUCT MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);display:none;align-items:flex-end;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;animation:overlayIn .25s ease both;}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+.modal-sheet{width:100%;max-height:90svh;overflow-y:auto;background:var(--white);border-radius:20px 20px 0 0;animation:sheetUp .3s cubic-bezier(.22,1,.36,1) both;position:relative;}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:none;background:var(--gray);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;}
+.modal-img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;}
+.modal-body{padding:18px;}
+.modal-name{font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:5px;}
+.modal-desc{font-size:.78rem;color:var(--sub);line-height:1.6;margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em;}
+.modal-price{font-size:1.25rem;font-weight:700;color:var(--text);margin-bottom:18px;}
+.modal-sec{font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text);margin-bottom:10px;}
+
+/* DATETIME PICKER */
+.datetime-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+.dt-field label{display:block;font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:6px;}
+.dt-field input,
+.dt-field select{width:100%;padding:11px 12px;border:1.5px solid var(--gray2);border-radius:10px;font-family:'Outfit',sans-serif;font-size:.88rem;color:var(--text);background:var(--white);outline:none;-webkit-appearance:none;}
+.dt-field input:focus,.dt-field select:focus{border-color:var(--wine-d);}
+.dt-field input:disabled,.dt-field select:disabled{opacity:.4;cursor:not-allowed;}
+.dt-err{font-size:.72rem;color:#c0392b;margin-top:4px;display:none;}
+
+.modal-add-btn{width:100%;padding:14px;background:var(--wine-d);color:#fff;border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .2s;margin-top:4px;}
+.modal-add-btn:hover{background:var(--wine-m);}
+.modal-add-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* CART */
+.cart-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);display:none;}
+.cart-overlay.open{display:block;}
+.cart-panel{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);background:var(--white);display:flex;flex-direction:column;z-index:301;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);}
+.cart-panel.open{transform:translateX(0);}
+.cart-header{background:var(--wine-d);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:56px;flex-shrink:0;}
+.cart-title{font-size:1rem;font-weight:600;}
+.cart-close{background:transparent;border:none;color:#fff;font-size:1.3rem;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
+.cart-items{flex:1;overflow-y:auto;padding:16px 20px;}
+.cart-empty{text-align:center;padding:60px 0;color:var(--sub);font-size:.9rem;}
+.cart-item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--gray);}
+.cart-item:last-child{border-bottom:none;}
+.ci-img{width:58px;height:58px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--warm);}
+.ci-info{flex:1;}
+.ci-name{font-size:.84rem;font-weight:600;color:var(--text);line-height:1.3;}
+.ci-date{font-size:.7rem;color:var(--sub);margin-top:2px;}
+.ci-price{font-size:.84rem;font-weight:700;color:var(--text);margin-top:4px;}
+.ci-qty{display:flex;align-items:center;gap:0;margin-top:8px;border:1.5px solid var(--gray2);border-radius:100px;overflow:hidden;width:fit-content;}
+.ci-qbtn{width:28px;height:26px;border:none;background:transparent;font-size:.9rem;font-weight:600;color:var(--text);cursor:pointer;}
+.ci-qnum{font-size:.8rem;font-weight:700;min-width:20px;text-align:center;color:var(--text);}
+.cart-footer{padding:16px 20px;border-top:1px solid var(--gray);flex-shrink:0;}
+.subtotal-row{display:flex;justify-content:space-between;font-size:.95rem;font-weight:600;color:var(--text);margin-bottom:14px;}
+.del-toggle{display:flex;gap:8px;margin-bottom:14px;}
+.del-btn{flex:1;padding:11px;border-radius:10px;border:1.5px solid var(--gray2);font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:500;background:var(--white);color:var(--sub);cursor:pointer;transition:all .2s;}
+.del-btn.active{background:var(--wine-d);border-color:var(--wine-d);color:#fff;}
+.checkout-btn{width:100%;padding:14px;background:var(--wine-d);color:#fff;border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;}
+
+/* CHECKOUT */
+.checkout-screen{display:none;position:fixed;inset:0;z-index:400;background:var(--white);overflow-y:auto;}
+.checkout-screen.active{display:block;animation:fadeUp .3s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.checkout-topbar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--gray);position:sticky;top:0;background:var(--white);z-index:10;}
+.back-btn{width:36px;height:36px;border-radius:50%;border:none;background:var(--gray);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.steps-indicator{display:flex;align-items:center;flex:1;justify-content:center;}
+.step-circle{width:34px;height:34px;border-radius:50%;background:var(--gray2);color:var(--sub);display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;transition:all .3s;flex-shrink:0;}
+.step-circle.active{background:var(--wine-d);color:#fff;}
+.step-circle.done{background:var(--wine-d);color:#fff;}
+.step-conn{height:1.5px;flex:1;background:var(--gray2);max-width:60px;}
+.step-conn.done{background:var(--wine-d);}
+.co-body{padding:22px 20px 100px;}
+.co-title{font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:4px;}
+.co-sub{font-size:.78rem;color:var(--sub);margin-bottom:18px;}
+
+.field{margin-bottom:16px;}
+label{display:block;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:6px;}
+input[type=text],input[type=tel],input[type=email],input[type=date],input[type=time],textarea,select{width:100%;padding:12px 14px;border:1.5px solid var(--gray2);border-radius:10px;font-family:'Outfit',sans-serif;font-size:.9rem;color:var(--text);background:var(--white);outline:none;transition:border .2s;-webkit-appearance:none;}
+input:focus,textarea:focus,select:focus{border-color:var(--wine-d);box-shadow:0 0 0 3px rgba(61,26,36,.08);}
+textarea{min-height:80px;resize:vertical;}
+.err{font-size:.74rem;color:#c0392b;margin-top:4px;display:none;}
+.field.invalid input,.field.invalid textarea,.field.invalid select{border-color:#c0392b;}
+.field.invalid .err{display:block;}
+
+/* EXTRAS */
+.extras-row{display:flex;gap:10px;margin-bottom:16px;}
+.extra-card{flex:1;border:2px solid var(--gray2);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;background:var(--white);}
+.extra-card.selected{border-color:var(--wine-d);background:#fdf5f5;}
+.extra-card .ei{font-size:1.6rem;margin-bottom:5px;}
+.extra-card .en{font-size:.84rem;font-weight:700;color:var(--text);}
+.extra-card .es{font-size:.7rem;color:var(--sub);margin-top:2px;}
+
+/* DELIVERY DATE */
+.co-dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+
+/* GOOGLE MAPS */
+.map-wrap{border-radius:12px;overflow:hidden;border:2px solid var(--gray2);margin-bottom:8px;}
+.map-wrap iframe{width:100%;height:250px;border:none;display:block;}
+.map-hint{font-size:.78rem;color:var(--sub);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.map-address-confirmed{font-size:.8rem;color:var(--wine-d);font-weight:600;margin-top:6px;min-height:18px;}
+
+/* PAYMENT */
+.pay-methods-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.pay-opt{border:1.5px solid var(--gray2);border-radius:10px;padding:12px;cursor:pointer;transition:all .2s;text-align:center;}
+.pay-opt:hover{border-color:var(--wine-d);}
+.pay-opt.selected{border-color:var(--wine-d);background:#fdf5f5;}
+.pay-opt-icon{font-size:1.3rem;margin-bottom:4px;}
+.pay-opt-name{font-size:.77rem;font-weight:600;color:var(--text);}
+.pay-details-box{background:#fdf5f5;border:1px solid rgba(61,26,36,.15);border-radius:10px;padding:14px;margin-bottom:16px;display:none;}
+.pay-details-title{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--wine-m);margin-bottom:8px;}
+.pay-details-text{font-size:.85rem;color:var(--text);line-height:1.8;}
+.upload-area{border:2px dashed var(--gray2);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;transition:all .25s;margin-bottom:8px;}
+.upload-area:hover,.upload-area.has-file{border-color:var(--wine-d);background:#fdf5f5;border-style:solid;}
+.upload-icon{font-size:1.8rem;margin-bottom:6px;}
+.upload-text{font-size:.82rem;color:var(--sub);}
+.upload-text strong{color:var(--wine-d);}
+#fileInput{display:none;}
+#previewImg{width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-top:10px;display:none;}
+.coupon-row{display:flex;gap:8px;margin-bottom:10px;}
+.coupon-row input{flex:1;}
+.coupon-btn{padding:0 16px;background:var(--wine-d);color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;}
+
+.total-bar{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--white);border-top:1px solid var(--gray);padding:12px 20px 18px;}
+.total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.total-label{font-size:.85rem;color:var(--sub);}
+.total-amount{font-size:1.2rem;font-weight:700;color:var(--text);}
+.complete-btn{width:100%;padding:14px;background:var(--wine-d);color:#fff;border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;}
+
+/* SUCCESS */
+#successScreen{display:none;position:fixed;inset:0;z-index:500;background:var(--white);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 30px;}
+#successScreen.active{display:flex;animation:fadeUp .4s ease both;}
+.success-ring{width:80px;height:80px;border-radius:50%;border:2px solid var(--wine-d);display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:22px;box-shadow:0 0 30px rgba(61,26,36,.15);}
+.success-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:400;color:var(--text);margin-bottom:10px;}
+.success-body{font-size:.87rem;color:var(--sub);line-height:1.8;margin-bottom:28px;}
+.success-btn{padding:13px 34px;background:var(--wine-d);color:#fff;border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;}
+
+footer{background:#110d06;padding:36px 20px 28px;text-align:center;border-top:1px solid rgba(201,151,58,.1);}
+.footer-logo{height:52px;object-fit:contain;margin-bottom:14px;opacity:.75;}
+.footer-text{font-size:.75rem;color:#8a7660;line-height:1.8;}
+.footer-text a{color:#c9973a;text-decoration:none;}
+.divider{height:8px;background:var(--gray);}
+
+@media(min-width:600px){.products-grid{grid-template-columns:repeat(3,1fr);}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <img src="https://ik.imagekit.io/d3ddbxom7/tr:,h-200/Negocios%2Fmellow%2FPagina%2Fpreview_business_logo_1769011680567" alt="Mellow"/>
+  </div>
+  <div class="topbar-title">mellow</div>
+  <div class="topbar-cart" onclick="openCart()">
+    🛒<span class="cart-badge" id="cartBadge">0</span>
+  </div>
+</div>
+
+<!-- HERO BANNER - using the real mellow banner image -->
+<div class="hero">
+  <img src="https://ik.imagekit.io/d3ddbxom7/tr:w-1200/Negocios%2Fmellow%2FPagina%2Fpreview_business_logo_1769011680567" 
+       onerror="this.parentElement.style.background='#2a1018';this.style.display='none';"
+       alt="Mellow Banner" style="width:100%;height:100%;object-fit:cover;"/>
+  <!-- Fallback: dark banner with logo text -->
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a0a0e,#3d1a24);">
+    <div style="text-align:center;">
+      <img src="https://ik.imagekit.io/d3ddbxom7/tr:,h-200/Negocios%2Fmellow%2FPagina%2Fpreview_business_logo_1769011680567" style="height:70px;object-fit:contain;filter:brightness(10);"/>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCTS -->
+<div class="section" id="productos">
+  <div class="sec-header">
+    <div class="sec-title">Productos destacados</div>
+    <div style="font-size:.78rem;color:var(--wine-m);cursor:pointer">Ver todo ↗</div>
+  </div>
+  <div class="products-grid" id="productsGrid"></div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalBg(event)">
+  <div class="modal-sheet">
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    <img class="modal-img" id="modalImg" src="" alt=""/>
+    <div class="modal-body">
+      <div class="modal-name" id="modalName"></div>
+      <div class="modal-desc" id="modalDesc"></div>
+      <div class="modal-price" id="modalPrice"></div>
+
+      <div class="modal-sec">Elige fecha y hora de entrega</div>
+      <div class="datetime-grid">
+        <div class="dt-field">
+          <label>Fecha</label>
+          <input type="date" id="modalDate" onchange="validateDatetime()"/>
+          <div class="dt-err" id="dateErr">Selecciona una fecha válida</div>
+        </div>
+        <div class="dt-field">
+          <label>Hora</label>
+          <select id="modalTime" onchange="validateDatetime()" disabled>
+            <option value="">Selecciona hora</option>
+          </select>
+          <div class="dt-err" id="timeErr">Selecciona una hora</div>
+        </div>
+      </div>
+
+      <button class="modal-add-btn" id="modalAddBtn" onclick="addToCart()" disabled>Agregar al carrito</button>
+    </div>
+  </div>
+</div>
+
+<!-- CART SIDEBAR -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-header">
+    <button style="background:transparent;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:.75rem;" onclick="clearCart()">🗑</button>
+    <span class="cart-title">Carrito</span>
+    <button class="cart-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cartItems"><div class="cart-empty">Tu carrito está vacío 🛒</div></div>
+  <div class="cart-footer">
+    <div class="subtotal-row"><span>Subtotal</span><span id="cartSubtotal">REF 0.00</span></div>
+    <div class="del-toggle">
+      
+      <button class="del-btn active" id="delDelivery" onclick="setDelivery('delivery')" style="width:100%">🛵 Delivery</button>
+    </div>
+    <button class="checkout-btn" onclick="startCheckout()">Proceder al pago</button>
+  </div>
+</div>
+
+<!-- CHECKOUT STEP 1: DATOS + FECHA/HORA + DIRECCIÓN -->
+<div class="checkout-screen" id="coScreen1">
+  <div class="checkout-topbar">
+    <button class="back-btn" onclick="closeCheckout()">←</button>
+    <div class="steps-indicator">
+      <div class="step-circle active"><span>1</span></div>
+      <div class="step-conn"></div>
+      <div class="step-circle"><span>2</span></div>
+    </div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="co-body">
+    <div class="co-title">Datos personales</div>
+    <div class="co-sub">¿Cómo te contactamos?</div>
+
+    <div class="field" id="f-name"><label>Nombre completo</label><input type="text" id="coName" placeholder="Ej: María González"/><div class="err">Ingresa tu nombre</div></div>
+    <div class="field" id="f-phone"><label>WhatsApp</label><input type="tel" id="coPhone" placeholder="+58 424 270 8381"/><div class="err">Ingresa tu número</div></div>
+    <div class="field"><label>Correo (opcional)</label><input type="email" id="coEmail" placeholder="tu@correo.com"/></div>
+    <div class="field"><label>Fecha de nacimiento</label><input type="date" id="coBirthdate"/></div>
+
+    <div style="height:1px;background:var(--gray2);margin:18px 0;"></div>
+
+    <div class="co-title" style="margin-bottom:14px;">Fecha y hora de entrega</div>
+    <div class="co-dt-grid">
+      <div class="field" id="f-coDate">
+        <label>Fecha</label>
+        <input type="date" id="coDeliveryDate" onchange="onCoDateChange()"/>
+        <div class="err">Selecciona una fecha</div>
+      </div>
+      <div class="field" id="f-coTime">
+        <label>Hora</label>
+        <select id="coDeliveryTime" onchange="validateCoDatetime()" disabled>
+          <option value="">Selecciona hora</option>
+        </select>
+        <div class="err">Selecciona una hora</div>
+      </div>
+    </div>
+    <div id="coDateHint" style="font-size:.75rem;color:var(--sub);margin-top:-10px;margin-bottom:14px;"></div>
+
+    <!-- EXTRAS -->
+    <div style="height:1px;background:var(--gray2);margin:18px 0;"></div>
+    <div class="co-title" style="margin-bottom:6px;">Extras para tu pedido</div>
+    <div class="co-sub">¿Necesitas algo adicional?</div>
+    <div class="extras-row">
+      <div class="extra-card" id="velaCard" onclick="toggleExtra('vela')">
+        <div class="ei">🕯️</div><div class="en">Vela</div><div class="es">¿Incluir vela?</div>
+      </div>
+      <div class="extra-card" id="notaCard" onclick="toggleExtra('nota')">
+        <div class="ei">📝</div><div class="en">Nota</div><div class="es">¿Agregar nota?</div>
+      </div>
+    </div>
+    <div id="notaWrap" style="display:none;">
+      <div class="field"><label>¿Qué dice la nota?</label><textarea id="coNota" placeholder="Ej: Feliz cumpleaños María 🎂" style="min-height:60px;"></textarea></div>
+    </div>
+
+    <!-- DELIVERY SECTION -->
+    <div id="deliverySection" style="display:none;margin-top:4px;">
+      <div style="height:1px;background:var(--gray2);margin:18px 0;"></div>
+      <div class="co-title">Dirección de entrega</div>
+      <div class="co-sub" style="margin-bottom:14px;">Busca tu dirección en el mapa o escríbela</div>
+
+      <div class="field" style="margin-bottom:12px;">
+        <label>Buscar dirección en Google Maps</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="gmapsSearch" placeholder="Ej: Las Mercedes, Caracas" style="flex:1"/>
+          <button onclick="openGoogleMaps()" style="padding:0 14px;background:var(--wine-d);color:#fff;border:none;border-radius:10px;font-family:Outfit,sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+            🗺️ Ver mapa
+          </button>
+        </div>
+      </div>
+
+      <div class="map-hint">📍 Después de buscar en Google Maps, copia la dirección exacta aquí abajo:</div>
+
+      <div class="map-wrap">
+        <iframe id="gmapsEmbed"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d63147.69!2d-66.9036!3d10.4806!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8c2a58adcd824807%3A0x3f80d8d60e4a2649!2sCaracas!5e0!3m2!1ses!2sve!4v1711234567890!5m2!1ses!2sve"
+          allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+      </div>
+      <p style="font-size:.72rem;color:var(--sub);margin-bottom:12px;">⬆️ Toca el mapa para explorar · Usa "Ver mapa" para buscar tu zona</p>
+
+      <div class="field" id="f-addr">
+        <label>Dirección completa</label>
+        <input type="text" id="coAddr" placeholder="Ej: Urb. Las Mercedes, Calle 5, Casa 12, portón negro"/>
+        <div class="err">Ingresa la dirección</div>
+      </div>
+      <div class="field">
+        <label>Referencia adicional</label>
+        <input type="text" id="coRef2" placeholder="Edificio, piso, punto de referencia..."/>
+      </div>
+    </div>
+
+  </div>
+  <div class="total-bar"><button class="complete-btn" onclick="goStep2()">Continuar →</button></div>
+</div>
+
+<!-- CHECKOUT STEP 2: PAGO -->
+<div class="checkout-screen" id="coScreen2">
+  <div class="checkout-topbar">
+    <button class="back-btn" onclick="backStep1()">←</button>
+    <div class="steps-indicator">
+      <div class="step-circle done">✓</div>
+      <div class="step-conn done"></div>
+      <div class="step-circle active"><span>2</span></div>
+    </div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="co-body">
+    <div class="co-title">Método de pago</div>
+    <div class="co-sub" style="margin-bottom:14px;">Selecciona cómo pagarás</div>
+
+    <!-- RESUMEN DE PAGO -->
+    <div id="payResumen" style="background:var(--gray);border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:8px;">Resumen de pago</div>
+      <div style="display:flex;justify-content:space-between;font-size:.84rem;padding:3px 0;"><span>Subtotal</span><span id="resumSubtotal">$0.00</span></div>
+      <div id="resumDeliveryRow" style="display:none;"><div style="display:flex;justify-content:space-between;font-size:.84rem;padding:3px 0;"><span>Delivery</span><span id="resumDelivery">$0.00</span></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:.95rem;font-weight:700;padding:6px 0 0;border-top:1px solid var(--gray2);margin-top:4px;"><span>Total</span><span id="resumTotal">$0.00</span></div>
+    </div>
+
+    <div class="pay-methods-grid">
+      <div class="pay-opt" id="pay-zelle" onclick="selPay('zelle')"><div class="pay-opt-icon">💵</div><div class="pay-opt-name">Zelle</div></div>
+      <div class="pay-opt" id="pay-pago_movil" onclick="selPay('pago_movil')"><div class="pay-opt-icon">📱</div><div class="pay-opt-name">Pago Móvil</div></div>
+      <div class="pay-opt" id="pay-efectivo" onclick="selPay('efectivo')"><div class="pay-opt-icon">💰</div><div class="pay-opt-name">Efectivo $</div></div>
+      <div class="pay-opt" id="pay-combinado" onclick="selPay('combinado')"><div class="pay-opt-icon">🔀</div><div class="pay-opt-name">Combinado</div></div>
+      <div class="pay-opt" id="pay-punto" onclick="selPay('punto')"><div class="pay-opt-icon">🏧</div><div class="pay-opt-name">Punto de Venta</div></div>
+    </div>
+    <div id="payErr" style="font-size:.75rem;color:#c0392b;margin-bottom:10px;display:none;">Selecciona un método de pago</div>
+
+    <div class="pay-details-box" id="payDetailsBox">
+      <div class="pay-details-title">Datos para el pago</div>
+      <div class="pay-details-text" id="payDetailsText"></div>
+    </div>
+
+    <!-- Bs CONVERSION (Pago Movil / Punto de Venta) -->
+    <div id="bsConvBox" style="display:none;background:#fff8e1;border:1.5px solid #f5c842;border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b8860b;margin-bottom:8px;">💱 Monto en bolívares</div>
+      <div style="display:flex;justify-content:space-between;font-size:.84rem;padding:3px 0;"><span style="color:#b8860b;">Tasa del día:</span><span id="bsTasaLabel" style="font-weight:700;color:#b8860b;">—</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:.84rem;padding:3px 0;"><span style="color:#b8860b;">Total en $:</span><span id="bsUsdLabel" style="font-weight:700;color:#b8860b;">—</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:1.15rem;font-weight:700;padding:6px 0 0;border-top:1px solid #f5c842;margin-top:4px;"><span style="color:#b8860b;">Total en Bs.:</span><span id="bsAmountLabel" style="color:#b8860b;">—</span></div>
+      <div style="font-size:.72rem;color:#b8860b;margin-top:6px;opacity:.8;">⚠️ La tasa puede variar. Confirma con la tienda.</div>
+    </div>
+
+    <!-- CASH CHANGE (Efectivo) -->
+    <div id="cashChangeBox" style="display:none;background:#e8f8ee;border:1.5px solid #a0d8b8;border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1a7a3c;margin-bottom:10px;">💵 Pago en efectivo</div>
+      <div style="font-size:.84rem;color:var(--text);margin-bottom:10px;">Total a pagar: <strong id="cashTotalLabel">$0.00</strong></div>
+      <div class="field" style="margin-bottom:8px;">
+        <label style="color:#1a7a3c;">¿Con cuánto vas a pagar?</label>
+        <input type="number" id="cashAmount" step="1" min="0" placeholder="Ej: 50" oninput="calcCashChange()" style="border-color:#a0d8b8;"/>
+      </div>
+      <div id="cashChangeResult" style="display:none;padding:10px;background:#fff;border-radius:8px;border:1px solid #a0d8b8;">
+        <div style="display:flex;justify-content:space-between;font-size:.84rem;"><span style="color:var(--sub);">Monto a recibir:</span><span id="cashReceiveLabel" style="font-weight:600;"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:.84rem;margin-top:4px;"><span style="color:var(--sub);">Vuelto a entregar:</span><span id="cashVueltoLabel" style="font-weight:700;color:#1a7a3c;font-size:1rem;"></span></div>
+      </div>
+    </div>
+
+    <div id="voucherSection" style="display:none;">
+      <div class="field" id="f-voucher">
+        <label>Comprobante de pago</label>
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon">📎</div>
+          <div class="upload-text">Toca para subir la foto<br><strong>JPG, PNG o PDF</strong></div>
+          <img id="previewImg" alt=""/>
+        </div>
+        <input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFile(this)"/>
+        <div class="err">Sube tu comprobante</div>
+      </div>
+      <div class="field"><label>Referencia (opcional)</label><input type="text" id="coRef" placeholder="Últimos 6 dígitos"/></div>
+    </div>
+
+    <div style="height:1px;background:var(--gray2);margin:16px 0;"></div>
+    <div class="co-title" style="margin-bottom:8px;">Cupón de descuento</div>
+    <div class="coupon-row">
+      <input type="text" id="coCoupon" placeholder="Código de descuento"/>
+      <button class="coupon-btn" onclick="applyCoupon()">Aplicar</button>
+    </div>
+    <div id="couponOk" style="font-size:.78rem;color:var(--green,#1a7a3c);display:none;">✓ Cupón aplicado</div>
+    <div id="couponErrMsg" style="font-size:.78rem;color:#c0392b;display:none;">Cupón no válido</div>
+  </div>
+  <div class="total-bar">
+    <div class="total-row"><span class="total-label">Total</span><span class="total-amount" id="totalAmount">REF 0.00</span></div>
+    <button class="complete-btn" onclick="completeOrder()">Completar pedido</button>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="successScreen">
+  <div class="success-ring">🎂</div>
+  <div class="success-title">¡Pedido recibido!</div>
+  <p class="success-body">Tu pedido fue enviado con éxito.<br>Te contactaremos por <strong>WhatsApp</strong> para confirmar.<br><br><em>¡Gracias por elegir Mellow! 🤍</em></p>
+  <button class="success-btn" onclick="resetAll()">Hacer otro pedido</button>
+</div>
+
+<footer>
+  <img class="footer-logo" src="https://ik.imagekit.io/d3ddbxom7/tr:,h-200/Negocios%2Fmellow%2FPagina%2Fpreview_business_logo_1769011680567" alt="Mellow"/>
+  <div class="footer-text">
+    LA TRINIDAD, C.C. TRINIDAD TEPUY, AL LADO DE MOOKAH<br>
+    <a href="tel:+584242708381">+58 424 270 8381</a><br>
+    © 2025 Mellow Cake Shop
+  </div>
+</footer>
+
+<script>
+/* ══ CONFIG ══ */
+const OWNER_WA = '584220502347';
+const VALID_COUPONS = {'MELLOW10':10,'PRIMERAVEZ':15};
+const PAY_DATA = {
+  zelle:'Zelle: <b>mellowcakeshop@gmail.com</b>',
+  pago_movil:'Banco: <b>Banesco</b><br>Teléfono: <b>+58 424 270 8381</b><br>RIF: <b>J-000000000</b>',
+  efectivo:'Paga en <b>efectivo al retirar</b> en la sede.',
+  combinado:'Indica cómo dividirás el monto entre los métodos disponibles.',
+  punto:'Punto de venta disponible <b>en sede</b>.',
+};
+
+// REAL product photos from Mellow's Wink store
+const PRODUCTS = [
+  {id:1,name:'✨ Lemon Pie ✨ NEW FLAVOUR',desc:'Base de galleta, cheesecake de limón, galleta triturada tostada en crema, merengue flameado y ralladura de limón.',price:40,img:'https://ik.imagekit.io/d3ddbxom7/tr:w-400,h-400/Negocios%2Fmellow%2FProductos%2F%E2%9C%A8LEMON%20PIE%E2%9C%A8%20NEW%20FLAVOUR%2F1772741547485.png',available:true},
+  {id:2,name:'Magnolia',desc:'Suave y cremoso, con notas de vainilla y flores. Nuestro clásico más amado.',price:40,img:'https://ik.imagekit.io/d3ddbxom7/tr:w-400,h-400/Negocios%2Fmellow%2FProductos%2FMAGNOLIA%2F1769018445408.png',available:true},
+  {id:3,name:'Tiramisú',desc:'Capas de bizcocho empapado en café, crema de mascarpone y cacao en polvo.',price:40,img:'https://ik.imagekit.io/d3ddbxom7/tr:w-400,h-400/Negocios%2Fmellow%2FProductos%2FTIRAMIS%C3%9A%2F1769018404092.png',available:true},
+  {id:4,name:'Chocolate',desc:'Intensa mezcla de cacao premium, ganache y bizcocho húmedo de chocolate.',price:40,img:'https://ik.imagekit.io/d3ddbxom7/tr:w-400,h-400/Negocios%2Fmellow%2FProductos%2FCHOCOLATE%2F1769018463304.png',available:true},
+  {id:5,name:'Caramel',desc:'Dulce de leche artesanal, caramelo salado y bizcocho de mantequilla.',price:40,img:'https://ik.imagekit.io/d3ddbxom7/tr:w-400,h-400/Negocios%2Fmellow%2FProductos%2FCARAMEL%2F1769018426676.png',available:false},
+  {id:6,name:'Strawberry Matcha Latte',desc:'Matcha japonés y fresa fresca sobre base cremosa.',price:5,img:'https://ik.imagekit.io/d3ddbxom7/tr:w-400,h-400/Negocios%2Fmellow%2FProductos%2FSTRAWBERRY%20MATCHA%20LATTEE%2F1769018848262.png',available:false},
+];
+
+/* ══ BUSINESS HOURS (matches admin) ══ */
+const BUSINESS_HOURS = {open:'10:00',close:'19:00'}; // Default
+
+/* ══ STATE ══ */
+let cart=[], deliveryMode='delivery', currentProduct=null;
+let selectedModalDate='', selectedModalTime='';
+let voucherB64='', voucherName='', discount=0;
+let selectedPayMethod='';
+let extrasVela=false, extrasNota=false;
+
+/* ══ DATE/TIME HELPERS ══ */
+function getTodayStr(){
+  const d=new Date(); return d.toISOString().split('T')[0];
+}
+
+function getMinDate(){
+  // Today is always valid; they just can't select past times if today
+  return getTodayStr();
+}
+
+function generateTimeSlots(dateStr){
+  const slots=[];
+  const now=new Date();
+  const selected=new Date(dateStr+'T00:00:00');
+  const isToday=dateStr===getTodayStr();
+
+  // Business hours 10:00 - 19:00, slots every 30 min
+  for(let h=10;h<19;h++){
+    for(let m=0;m<60;m+=30){
+      const slotTime=new Date(dateStr+'T'+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':00');
+      // If today, only show times at least 1 hour from now
+      if(isToday){
+        const cutoff=new Date(now.getTime()+60*60*1000); // 1hr buffer
+        if(slotTime<=cutoff) continue;
+      }
+      slots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+    }
+  }
+  return slots;
+}
+
+function populateTimeSelect(selectEl, dateStr){
+  selectEl.innerHTML='<option value="">Selecciona hora</option>';
+  if(!dateStr){selectEl.disabled=true;return;}
+  const slots=generateTimeSlots(dateStr);
+  if(slots.length===0){
+    selectEl.innerHTML='<option value="">No hay horarios disponibles hoy</option>';
+    selectEl.disabled=true;
+    return;
+  }
+  slots.forEach(t=>{
+    const opt=document.createElement('option');
+    opt.value=t; opt.textContent=t;
+    selectEl.appendChild(opt);
+  });
+  selectEl.disabled=false;
+}
+
+/* ══ PRODUCT RENDERING ══ */
+function renderProducts(){
+  document.getElementById('productsGrid').innerHTML=PRODUCTS.map(p=>`
+    <div class="p-card ${p.available?'':'sold-out'}" onclick="${p.available?`openProduct(${p.id})`:''}">
+      ${!p.available?'<div class="sold-tag">Agotado</div>':''}
+      <img class="p-img" src="${p.img}" alt="${p.name}" loading="lazy"/>
+      <div class="p-body">
+        <div class="p-name">${p.name}</div>
+        <div class="p-price">REF ${p.price.toFixed(2)}</div>
+      </div>
+      ${p.available?`
+        <div class="p-qty" id="pqty-${p.id}">
+          <button class="qty-btn" onclick="event.stopPropagation();changeQtyCard(${p.id},-1)">−</button>
+          <span class="qty-num" id="pqnum-${p.id}">0</span>
+          <button class="qty-btn" onclick="event.stopPropagation();changeQtyCard(${p.id},1)">+</button>
+        </div>
+        <button class="p-add" id="padd-${p.id}" onclick="event.stopPropagation();openProduct(${p.id})">+</button>
+      `:''}
+    </div>`).join('');
+}
+
+/* ══ PRODUCT MODAL ══ */
+function openProduct(id){
+  currentProduct=PRODUCTS.find(p=>p.id===id); if(!currentProduct) return;
+  document.getElementById('modalImg').src=currentProduct.img;
+  document.getElementById('modalName').textContent=currentProduct.name;
+  document.getElementById('modalDesc').textContent=currentProduct.desc;
+  document.getElementById('modalPrice').textContent=`REF ${currentProduct.price.toFixed(2)}`;
+  // Reset date/time
+  selectedModalDate=''; selectedModalTime='';
+  const dateEl=document.getElementById('modalDate');
+  const timeEl=document.getElementById('modalTime');
+  dateEl.min=getMinDate();
+  dateEl.value='';
+  timeEl.innerHTML='<option value="">Selecciona hora</option>';
+  timeEl.disabled=true;
+  document.getElementById('modalAddBtn').disabled=true;
+  document.getElementById('dateErr').style.display='none';
+  document.getElementById('timeErr').style.display='none';
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function validateDatetime(){
+  const dateEl=document.getElementById('modalDate'), timeEl=document.getElementById('modalTime');
+  const dateVal=dateEl.value, timeVal=timeEl.value;
+  // Populate time slots when date changes
+  if(dateEl===document.activeElement||document.activeElement===document.getElementById('modalDate')){
+    populateTimeSelect(timeEl, dateVal);
+  }
+  selectedModalDate=dateVal; selectedModalTime=timeVal;
+  const valid=dateVal&&timeVal;
+  document.getElementById('modalAddBtn').disabled=!valid;
+}
+
+document.addEventListener('change',function(e){
+  if(e.target.id==='modalDate'){
+    const timeEl=document.getElementById('modalTime');
+    populateTimeSelect(timeEl, e.target.value);
+    selectedModalDate=e.target.value;
+    selectedModalTime='';
+    document.getElementById('modalAddBtn').disabled=true;
+  }
+  if(e.target.id==='modalTime'){
+    selectedModalTime=e.target.value;
+    document.getElementById('modalAddBtn').disabled=!selectedModalDate||!selectedModalTime;
+  }
+});
+
+function addToCart(){
+  if(!currentProduct||!selectedModalDate||!selectedModalTime) return;
+  const dateLabel=`${selectedModalDate} a las ${selectedModalTime}`;
+  const ex=cart.find(c=>c.productId===currentProduct.id&&c.date===dateLabel);
+  if(ex) ex.qty++;
+  else cart.push({productId:currentProduct.id,name:currentProduct.name,price:currentProduct.price,img:currentProduct.img,date:dateLabel,qty:1});
+  updateCartUI(); updateCardQty(currentProduct.id); closeModalDirect();
+}
+
+function changeQtyCard(id,delta){
+  const idx=cart.findIndex(c=>c.productId===id);
+  if(idx>-1){cart[idx].qty=Math.max(0,cart[idx].qty+delta);if(cart[idx].qty===0)cart.splice(idx,1);}
+  updateCartUI(); updateCardQty(id);
+}
+function updateCardQty(id){
+  const total=cart.filter(c=>c.productId===id).reduce((s,c)=>s+c.qty,0);
+  const q=document.getElementById('pqty-'+id),a=document.getElementById('padd-'+id),n=document.getElementById('pqnum-'+id);
+  if(!q) return;
+  if(total>0){q.classList.add('show');if(a)a.style.display='none';if(n)n.textContent=total;}
+  else{q.classList.remove('show');if(a)a.style.display='';}
+}
+function closeModalBg(e){if(e.target===document.getElementById('modalOverlay'))closeModalDirect();}
+function closeModalDirect(){document.getElementById('modalOverlay').classList.remove('open');document.body.style.overflow='';}
+
+/* ══ CART ══ */
+function openCart(){document.getElementById('cartOverlay').classList.add('open');document.getElementById('cartPanel').classList.add('open');document.body.style.overflow='hidden';renderCartItems();}
+function closeCart(){document.getElementById('cartOverlay').classList.remove('open');document.getElementById('cartPanel').classList.remove('open');document.body.style.overflow='';}
+function clearCart(){cart=[];updateCartUI();renderCartItems();PRODUCTS.forEach(p=>updateCardQty(p.id));}
+
+function renderCartItems(){
+  const el=document.getElementById('cartItems');
+  if(!cart.length){el.innerHTML='<div class="cart-empty">Tu carrito está vacío 🛒</div>';return;}
+  el.innerHTML=cart.map((c,i)=>`
+    <div class="cart-item">
+      <img class="ci-img" src="${c.img}" alt="${c.name}"/>
+      <div class="ci-info">
+        <div class="ci-name">${c.name}</div>
+        <div class="ci-date">📅 ${c.date}</div>
+        <div class="ci-price">REF ${(c.price*c.qty).toFixed(2)}</div>
+        <div class="ci-qty">
+          <button class="ci-qbtn" onclick="updateCartItem(${i},-1)">−</button>
+          <span class="ci-qnum">${String(c.qty).padStart(2,'0')}</span>
+          <button class="ci-qbtn" onclick="updateCartItem(${i},1)">+</button>
+        </div>
+      </div>
+    </div>`).join('');
+  document.getElementById('cartSubtotal').textContent=`REF ${getSubtotal().toFixed(2)}`;
+}
+function updateCartItem(idx,delta){cart[idx].qty=Math.max(0,cart[idx].qty+delta);if(cart[idx].qty===0)cart.splice(idx,1);updateCartUI();renderCartItems();PRODUCTS.forEach(p=>updateCardQty(p.id));}
+function updateCartUI(){const t=cart.reduce((s,c)=>s+c.qty,0);const b=document.getElementById('cartBadge');b.textContent=t;b.classList.toggle('show',t>0);}
+function getSubtotal(){return cart.reduce((s,c)=>s+(c.price*c.qty),0);}
+function getTotal(){return Math.max(0,getSubtotal()-discount);}
+function setDelivery(mode){deliveryMode=mode;document.getElementById('delPickup').classList.toggle('active',mode==='pickup');document.getElementById('delDelivery').classList.toggle('active',mode==='delivery');}
+
+/* ══ EXTRAS ══ */
+function toggleExtra(type){
+  if(type==='vela'){extrasVela=!extrasVela;const c=document.getElementById('velaCard');c.classList.toggle('selected',extrasVela);}
+  else{extrasNota=!extrasNota;const c=document.getElementById('notaCard');c.classList.toggle('selected',extrasNota);document.getElementById('notaWrap').style.display=extrasNota?'block':'none';}
+}
+
+/* ══ CHECKOUT ══ */
+function startCheckout(){
+  if(!cart.length) return;
+  closeCart();
+  document.getElementById('deliverySection').style.display='block';
+  // Set min date on co date picker
+  document.getElementById('coDeliveryDate').min=getMinDate();
+  document.getElementById('coDeliveryDate').value='';
+  document.getElementById('coDeliveryTime').innerHTML='<option value="">Selecciona hora</option>';
+  document.getElementById('coDeliveryTime').disabled=true;
+  document.getElementById('coScreen1').classList.add('active');
+  document.body.style.overflow='hidden';
+}
+function closeCheckout(){document.getElementById('coScreen1').classList.remove('active');document.body.style.overflow='';}
+function backStep1(){document.getElementById('coScreen2').classList.remove('active');document.getElementById('coScreen1').classList.add('active');}
+
+/* CO DATE CHANGE */
+function onCoDateChange(){
+  const dateVal=document.getElementById('coDeliveryDate').value;
+  const timeEl=document.getElementById('coDeliveryTime');
+  populateTimeSelect(timeEl,dateVal);
+  const hint=document.getElementById('coDateHint');
+  if(dateVal===getTodayStr()) hint.textContent='⏰ Solo se muestran horarios disponibles (mínimo 1 hora desde ahora)';
+  else hint.textContent='';
+}
+function validateCoDatetime(){/* validation happens in goStep2 */}
+
+/* GOOGLE MAPS */
+function openGoogleMaps(){
+  const q=document.getElementById('gmapsSearch').value.trim();
+  const query=q?encodeURIComponent(q+', Caracas, Venezuela'):'Caracas,+Venezuela';
+  // Update embed
+  document.getElementById('gmapsEmbed').src=`https://www.google.com/maps/embed/v1/search?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY&q=${query}`;
+  // Also open in app
+  window.open(`https://maps.google.com/?q=${query}`,'_blank');
+}
+
+function req(fieldId,val){const ok=val&&val.trim();document.getElementById(fieldId).classList.toggle('invalid',!ok);return !!ok;}
+
+function goStep2(){
+  let ok=true;
+  if(!req('f-name',document.getElementById('coName').value)) ok=false;
+  if(!req('f-phone',document.getElementById('coPhone').value)) ok=false;
+  // Validate delivery date/time
+  const dateVal=document.getElementById('coDeliveryDate').value;
+  const timeVal=document.getElementById('coDeliveryTime').value;
+  if(!dateVal){document.getElementById('f-coDate').classList.add('invalid');ok=false;}
+  else document.getElementById('f-coDate').classList.remove('invalid');
+  if(!timeVal){document.getElementById('f-coTime').classList.add('invalid');ok=false;}
+  else document.getElementById('f-coTime').classList.remove('invalid');
+  if(deliveryMode==='delivery'&&!req('f-addr',document.getElementById('coAddr').value)) ok=false;
+  if(!ok) return;
+  document.getElementById('totalAmount').textContent=`REF ${getTotal().toFixed(2)}`;
+  document.getElementById('coScreen1').classList.remove('active');
+  document.getElementById('coScreen2').classList.add('active');
+  updatePayResumen();
+  // Try to fetch tasa from localStorage (set by admin)
+  storeTasa = parseFloat(localStorage.getItem('mellow_tasa')||'0')||0;
+}
+
+/* PAYMENT */
+// Tasa from admin (shared via localStorage or hardcoded - update as needed)
+let storeTasa = parseFloat(localStorage.getItem('mellow_tasa')||'0') || 0;
+
+function selPay(method){
+  selectedPayMethod=method;
+  document.querySelectorAll('.pay-opt').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('pay-'+method)?.classList.add('selected');
+  document.getElementById('payErr').style.display='none';
+
+  const box=document.getElementById('payDetailsBox');
+  const needsVoucher=method!=='efectivo'&&method!=='punto';
+  if(PAY_DATA[method]){box.style.display='block';document.getElementById('payDetailsText').innerHTML=PAY_DATA[method];}
+  else box.style.display='none';
+  document.getElementById('voucherSection').style.display=needsVoucher?'block':'none';
+
+  // Show/hide Bs conversion box
+  const bsBox=document.getElementById('bsConvBox');
+  const cashBox=document.getElementById('cashChangeBox');
+  bsBox.style.display='none'; cashBox.style.display='none';
+
+  if(method==='pago_movil'||method==='punto'){
+    const total=getTotal();
+    if(storeTasa>0){
+      bsBox.style.display='block';
+      document.getElementById('bsTasaLabel').textContent='Bs. '+storeTasa.toFixed(2)+' / $1';
+      document.getElementById('bsUsdLabel').textContent='$'+total.toFixed(2);
+      document.getElementById('bsAmountLabel').textContent='Bs. '+(total*storeTasa).toFixed(2);
+    } else {
+      bsBox.style.display='block';
+      document.getElementById('bsTasaLabel').textContent='No disponible';
+      document.getElementById('bsUsdLabel').textContent='$'+total.toFixed(2);
+      document.getElementById('bsAmountLabel').textContent='Consultar en tienda';
+    }
+  } else if(method==='efectivo'){
+    cashBox.style.display='block';
+    document.getElementById('cashTotalLabel').textContent='$'+getTotal().toFixed(2);
+    document.getElementById('cashAmount').value='';
+    document.getElementById('cashChangeResult').style.display='none';
+  }
+
+  // Update summary
+  updatePayResumen();
+}
+
+function updatePayResumen(){
+  const sub=getSubtotal(), delFee=deliveryMode==='delivery'?3:0, tot=getTotal();
+  document.getElementById('resumSubtotal').textContent='$'+sub.toFixed(2);
+  document.getElementById('resumTotal').textContent='$'+(tot).toFixed(2);
+  const delivRow=document.getElementById('resumDeliveryRow');
+  if(delivRow){ delivRow.style.display=delFee>0?'block':'none'; document.getElementById('resumDelivery').textContent='$'+delFee.toFixed(2); }
+}
+
+function calcCashChange(){
+  const total=getTotal();
+  const amount=parseFloat(document.getElementById('cashAmount').value)||0;
+  const resultEl=document.getElementById('cashChangeResult');
+  const vueltoEl=document.getElementById('cashVueltoLabel');
+  const receiveEl=document.getElementById('cashReceiveLabel');
+  if(amount>0){
+    resultEl.style.display='block';
+    receiveEl.textContent='$'+amount.toFixed(2);
+    const vuelto=amount-total;
+    vueltoEl.textContent=vuelto>=0?'$'+vuelto.toFixed(2):'⚠️ Monto insuficiente ($'+Math.abs(vuelto).toFixed(2)+' de falta)';
+    vueltoEl.style.color=vuelto>=0?'#1a7a3c':'#c0392b';
+  } else resultEl.style.display='none';
+}
+function handleFile(input){
+  const file=input.files[0]; if(!file) return;
+  voucherName=file.name;
+  const area=document.getElementById('uploadArea');
+  area.classList.add('has-file');
+  area.querySelector('.upload-text').innerHTML=`<strong>✓ ${file.name}</strong>`;
+  if(file.type.startsWith('image/')){const r=new FileReader();r.onload=e=>{voucherB64=e.target.result;const img=document.getElementById('previewImg');img.src=e.target.result;img.style.display='block';};r.readAsDataURL(file);}
+  else voucherB64='pdf';
+  document.getElementById('f-voucher')?.classList.remove('invalid');
+}
+function applyCoupon(){
+  const code=document.getElementById('coCoupon').value.trim().toUpperCase();
+  const ok=document.getElementById('couponOk'),err=document.getElementById('couponErrMsg');
+  ok.style.display='none'; err.style.display='none';
+  if(VALID_COUPONS[code]){discount=getSubtotal()*(VALID_COUPONS[code]/100);ok.textContent=`✓ Cupón aplicado — ${VALID_COUPONS[code]}% de descuento`;ok.style.display='block';}
+  else{discount=0;err.style.display='block';}
+  document.getElementById('totalAmount').textContent=`REF ${getTotal().toFixed(2)}`;
+}
+
+/* FIREBASE */
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getFirestore, collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+
+const FB_CONFIG = {
+  apiKey:            "AIzaSyDdCZXSoGeTQpFhWst4BuztS0rZegy1drE",
+  authDomain:        "mellow-5356f.firebaseapp.com",
+  projectId:         "mellow-5356f",
+  storageBucket:     "mellow-5356f.firebasestorage.app",
+  messagingSenderId: "822351946880",
+  appId:             "1:822351946880:web:ccdb475954208ba514f265"
+};
+const fbApp  = initializeApp(FB_CONFIG);
+const db     = getFirestore(fbApp);
+const storage = getStorage(fbApp);
+
+// Load tasa from Firebase on start
+async function loadStoreTasa(){
+  try {
+    const snap = await getDocs(query(collection(db,'tasa'), orderBy('createdAt','desc'), limit(1)));
+    if(!snap.empty){ storeTasa = snap.docs[0].data().rate; }
+  } catch(e){ console.log('No tasa data'); }
+}
+loadStoreTasa();
+
+// Load products from Firebase
+async function loadFirebaseProducts(){
+  try {
+    const snap = await getDocs(query(collection(db,'products'), orderBy('order','asc')));
+    if(!snap.empty){
+      const fbProds = snap.docs.map(d=>({id:d.id,...d.data()}));
+      // Merge with PRODUCTS array — update img, price, available
+      fbProds.forEach(fp=>{
+        const local = PRODUCTS.find(p=>p.name===fp.name);
+        if(local){ local.img=fp.img||local.img; local.price=fp.price||local.price; local.available=fp.available!==undefined?fp.available:local.available; }
+      });
+      renderProducts();
+    }
+  } catch(e){ console.log('Using local products'); }
+}
+loadFirebaseProducts();
+
+/* COMPLETE ORDER */
+async function completeOrder(){
+  if(!selectedPayMethod){document.getElementById('payErr').style.display='block';return;}
+  const needsVoucher=selectedPayMethod!=='efectivo'&&selectedPayMethod!=='punto';
+  if(needsVoucher&&!voucherB64){document.getElementById('f-voucher')?.classList.add('invalid');return;}
+
+  const name=document.getElementById('coName').value;
+  const phone=document.getElementById('coPhone').value;
+  const addr=document.getElementById('coAddr').value;
+  const ref2=document.getElementById('coRef2').value;
+  const ref=document.getElementById('coRef').value;
+  const birthdate=document.getElementById('coBirthdate').value;
+  const notaText=document.getElementById('coNota')?.value||'';
+  const delivDate=document.getElementById('coDeliveryDate').value;
+  const delivTime=document.getElementById('coDeliveryTime').value;
+  const delivFee = deliveryMode==='delivery'?3:0;
+  const subtotal = getSubtotal();
+  const total = getTotal() + delivFee;
+  const payNames={zelle:'Zelle',pago_movil:'Pago Móvil',efectivo:'Efectivo en $',combinado:'Pago combinado',punto:'Punto de Venta'};
+
+  // Disable button to prevent double submit
+  const btn = document.querySelector('#coScreen2 .complete-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Enviando...'; }
+
+  // Upload voucher to Firebase Storage
+  let voucherUrl = '';
+  if(voucherB64 && voucherB64 !== 'pdf' && voucherName){
+    try {
+      const blob = await fetch(voucherB64).then(r=>r.blob());
+      const fileRef = storageRef(storage, `vouchers/${Date.now()}_${voucherName}`);
+      await uploadBytes(fileRef, blob);
+      voucherUrl = await getDownloadURL(fileRef);
+    } catch(e){ console.error('Voucher upload error:', e); }
+  }
+
+  // Build order object for Firestore
+  const orderData = {
+    sede: 'barquisimeto', — la tienda puede tener su propia sede
+    client: name,
+    phone: phone,
+    birthdate: birthdate || null,
+    email: document.getElementById('coEmail')?.value || '',
+    items: cart.map(c=>({name:c.name, qty:c.qty, price:c.price})),
+    type: deliveryMode,
+    address: deliveryMode==='delivery' ? addr : '',
+    addressRef: ref2 || '',
+    deliveryDate: delivDate,
+    deliveryTime: delivTime,
+    subtotal: subtotal,
+    deliveryFee: delivFee,
+    total: total,
+    discount: discount || 0,
+    payMethod: selectedPayMethod,
+    payRef: ref || '',
+    voucherUrl: voucherUrl,
+    voucherName: voucherName || '',
+    vela: extrasVela,
+    nota: notaText,
+    status: 'new',
+    createdAt: serverTimestamp(),
+  };
+
+  try {
+    // Save to Firestore
+    await addDoc(collection(db,'orders'), orderData);
+
+    // Send WhatsApp
+    const items=cart.map(c=>`• ${c.name} x${c.qty}`).join('\n');
+    const bdLine=birthdate?`\n🎂 *Cumpleaños:* ${birthdate}`:'';
+    const extrasLine=(extrasVela||notaText)?`\n\n✨ *Extras:*${extrasVela?'\n🕯️ Con vela':''}${notaText?`\n📝 Nota: "${notaText}"`:''}`:'';
+    const addrLine=deliveryMode==='delivery'?`\n🏠 *Dirección:* ${addr}${ref2?'\n📌 *Ref:* '+ref2:''}`:'';
+    const cashAmt=parseFloat(document.getElementById('cashAmount')?.value)||0;
+    const cashLine=selectedPayMethod==='efectivo'&&cashAmt>0?`\n💵 *Paga con:* $${cashAmt.toFixed(2)} · *Vuelto:* $${(cashAmt-total).toFixed(2)}`:'';
+    const bsLine=(selectedPayMethod==='pago_movil'||selectedPayMethod==='punto')&&storeTasa>0?`\n💱 *En Bs:* Bs. ${(total*storeTasa).toFixed(2)} (tasa ${storeTasa})`:'';
+
+    const msg=encodeURIComponent(
+`🎂 *NUEVO PEDIDO — MELLOW*
+
+👤 *Cliente:* ${name}
+📱 *WhatsApp:* ${phone}${bdLine}
+🛒 *Tipo:* ${deliveryMode==='delivery'?'🛵 Delivery':'🏪 Recoger en tienda'}${addrLine}
+📅 *Fecha de entrega:* ${delivDate} a las ${delivTime}
+
+📦 *Productos:*
+${items}${extrasLine}
+
+💳 *Pago:* ${payNames[selectedPayMethod]}${cashLine}${bsLine}
+${ref?`🔖 *Referencia:* ${ref}\n`:''}${discount>0?`🏷️ *Descuento:* -$${discount.toFixed(2)}\n`:''}💵 *Subtotal:* $${subtotal.toFixed(2)}${delivFee?`\n🛵 *Delivery:* $${delivFee}`:''}
+💰 *Total:* $${total.toFixed(2)}
+${voucherUrl?`📎 *Comprobante:* ✅ Subido`:''}
+
+_Pedido vía mellowcakeshop.com_`);
+
+    window.open(`https://wa.me/${OWNER_WA}?text=${msg}`,'_blank');
+    document.getElementById('coScreen2').classList.remove('active');
+    document.getElementById('successScreen').classList.add('active');
+    document.body.style.overflow='hidden';
+
+  } catch(e){
+    console.error('Error saving order:', e);
+    alert('Hubo un error al enviar el pedido. Por favor intenta de nuevo.');
+    if(btn){ btn.disabled=false; btn.textContent='Completar pedido'; }
+  }
+}
+
+function resetAll(){
+  cart=[];discount=0;voucherB64='';voucherName='';selectedPayMethod='';extrasVela=false;extrasNota=false;
+  updateCartUI();PRODUCTS.forEach(p=>updateCardQty(p.id));
+  document.getElementById('successScreen').classList.remove('active');
+  document.body.style.overflow='';
+  ['coName','coPhone','coEmail','coBirthdate','coAddr','coRef2','coRef','coCoupon','coNota'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['velaCard','notaCard'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('selected');});
+  document.getElementById('notaWrap').style.display='none';
+}
+
+/* INIT */
+renderProducts();
+</script>
+</body>
+</html>
