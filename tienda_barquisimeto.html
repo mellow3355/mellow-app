@@ -1216,16 +1216,16 @@ window.loadProfile = async function(){
   resultsEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--sub);">Buscando tus pedidos...</div>';
 
   try {
-    var snap = await getDocs(query(
-      collection(db,'orders'),
-      where('phone','==',phone),
-      orderBy('createdAt','desc')
-    ));
-
+    var snap = await getDocs(query(collection(db,'orders'), where('phone','==',phone)));
     // Try alternate phone format if empty
     if(snap.empty){
       var altPhone = phone.startsWith('+') ? phone.slice(1) : '+'+phone;
-      snap = await getDocs(query(collection(db,'orders'), where('phone','==',altPhone), orderBy('createdAt','desc')));
+      snap = await getDocs(query(collection(db,'orders'), where('phone','==',altPhone)));
+    }
+    // Also try without spaces
+    if(snap.empty){
+      var cleanPhone = phone.replace(/\s/g,'');
+      snap = await getDocs(query(collection(db,'orders'), where('phone','==',cleanPhone)));
     }
 
     if(snap.empty){
@@ -1313,13 +1313,13 @@ window.loadProfile = async function(){
 async function checkActiveOrder(phone){
   if(!phone) return false;
   try {
-    var snap = await getDocs(query(
-      collection(db,'orders'),
-      where('phone','==',phone),
-      where('status','in',['new','confirmed','transit'])
-    ));
-    return !snap.empty;
-  } catch(e){ return false; }
+    var snap = await getDocs(query(collection(db,'orders'), where('phone','==',phone)));
+    var hasActive = snap.docs.some(function(d){
+      var s=d.data().status;
+      return s==='new'||s==='confirmed'||s==='transit';
+    });
+    return hasActive;
+  } catch(e){ console.log('checkActiveOrder error:', e.message); return false; }
 }
 
 /* ══ EXPOSE FUNCTIONS TO HTML onclick handlers ══ */
@@ -1363,11 +1363,13 @@ window.trackOrder = async function(){
   try {
     // Search by phone - try with and without country code
     var snap = await getDocs(query(collection(db,'orders'), where('phone','==',phone)));
-    if(snap.empty && !phone.startsWith('+')){
-      snap = await getDocs(query(collection(db,'orders'), where('phone','==','+'+phone)));
+    if(snap.empty){
+      var alt1 = phone.startsWith('+') ? phone.slice(1) : '+'+phone;
+      snap = await getDocs(query(collection(db,'orders'), where('phone','==',alt1)));
     }
-    if(snap.empty && phone.startsWith('+')){
-      snap = await getDocs(query(collection(db,'orders'), where('phone','==',phone.slice(1))));
+    if(snap.empty){
+      var alt2 = phone.replace(/\s/g,'').replace(/^0/,'58');
+      snap = await getDocs(query(collection(db,'orders'), where('phone','==',alt2)));
     }
     
     if(snap.empty){

@@ -1155,7 +1155,7 @@ function renderStoreEditor(){
         <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
           <div class="pe-price">$${p.price||0}</div>
           <span style="font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:100px;background:${(p.stock||0)<=0?'var(--red-l)':(p.stock||0)<=5?'var(--yellow-l)':'var(--green-l)'};color:${(p.stock||0)<=0?'var(--red)':(p.stock||0)<=5?'var(--yellow)':'var(--green)'};">
-            ${(p.stock||0)<=0?'Agotado':'Stock: '+(p.stock||0)}
+            ${(function(){ var sk=viewSede==='all'?'caracas':viewSede; var st=p['stock_'+sk]!==undefined?p['stock_'+sk]:(p.stock||0); return st<=0?'Agotado':'Stock: '+st; })()}
           </span>
         </div>
       </div>
@@ -1217,8 +1217,9 @@ window.editProduct = function(id){
   document.getElementById('epName').value=p.name||'';
   document.getElementById('epDesc').value=p.desc||'';
   document.getElementById('epPrice').value=p.price||0;
-  const editSede = viewSede === 'all' ? 'caracas' : viewSede;
-  document.getElementById('epStock').value = p['stock_' + editSede] !== undefined ? p['stock_' + editSede] : (p.stock||0);
+  var editSede = viewSede === 'all' ? 'caracas' : viewSede;
+  var editStockVal = p['stock_' + editSede] !== undefined ? p['stock_' + editSede] : (p.stock !== undefined ? p.stock : 0);
+  document.getElementById('epStock').value = editStockVal;
   document.getElementById('epCat').value=p.cat||'Cake Box';
   document.getElementById('epAvailable').checked=!!p.available;
   if(p.img){ document.getElementById('prodImgPreview').src=p.img; document.getElementById('prodImgPreview').style.display='block'; document.getElementById('prodImgPlaceholder').style.display='none'; }
