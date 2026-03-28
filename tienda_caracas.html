@@ -507,20 +507,22 @@ let sedePayInfo = { banco:'', celular:'', cedula:'', zelle:'' };
 
 async function loadSedePayInfo(){
   try {
-    const { getDoc, doc: firestoreDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-    var snap = await getDoc(firestoreDoc(db, 'settings', 'pagos_' + SEDE_KEY));
+    var snap = await getDoc(doc(db, 'settings', 'pagos_' + SEDE_KEY));
     if(snap.exists()) sedePayInfo = snap.data();
-  } catch(e){ console.log('No pay info'); }
+  } catch(e){ console.log('No pay info:', e.message); }
 }
 
 async function loadSedeSchedule(){
   try {
-    const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-    const snap = await getDoc(doc(db, 'schedules', SEDE_KEY));
+    // db and getDoc/doc are already imported at top of module
+    var snap = await getDoc(doc(db, 'schedules', SEDE_KEY));
     if(snap.exists()){
       sedeSchedule = snap.data();
+      console.log('Schedule loaded for', SEDE_KEY, sedeSchedule);
+    } else {
+      console.log('No schedule found for', SEDE_KEY, '- using defaults');
     }
-  } catch(e){ console.log('No schedule in Firebase, using defaults'); }
+  } catch(e){ console.log('Schedule load error:', e.message); }
 }
 
 function getSedeHours(dateStr){
@@ -784,19 +786,17 @@ function startCheckout(){
   if(!cart.length) return;
   closeCart();
   document.getElementById('deliverySection').style.display=deliveryMode==='delivery'?'block':'none';
-  // Set min date on co date picker
-  // Show delivery summary from cart items
+  // Show delivery summary from cart items dates
   var allDates = cart.map(function(c){ return c.date; }).filter(Boolean);
   var summaryEl = document.getElementById('deliverySummaryText');
-  if(summaryEl && allDates.length){
-    var unique = allDates.filter(function(v,i,a){ return a.indexOf(v)===i; });
-    summaryEl.textContent = unique.join(', ');
+  if(summaryEl){
+    if(allDates.length){
+      var unique = allDates.filter(function(v,i,a){ return a.indexOf(v)===i; });
+      summaryEl.textContent = unique.join(', ');
+    } else {
+      summaryEl.textContent = 'Sin fecha seleccionada';
+    }
   }
-  // Keep hidden fields for compatibility
-  var coDate = document.getElementById('coDeliveryDate');
-  var coTime = document.getElementById('coDeliveryTime');
-  document.getElementById('coDeliveryTime').innerHTML='<option value="">Selecciona hora</option>';
-  document.getElementById('coDeliveryTime').disabled=true;
   document.getElementById('coScreen1').classList.add('active');
   document.body.style.overflow='hidden';
 }
@@ -1154,14 +1154,13 @@ window.trackOrder = async function(){
   resultsEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--sub);">Buscando...</div>';
   
   try {
-    const { getDocs, collection: col, query: q2, where } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
     // Search by phone - try with and without country code
-    var snap = await getDocs(q2(col(db,'orders'), where('phone','==',phone)));
+    var snap = await getDocs(query(collection(db,'orders'), where('phone','==',phone)));
     if(snap.empty && !phone.startsWith('+')){
-      snap = await getDocs(q2(col(db,'orders'), where('phone','==','+'+phone)));
+      snap = await getDocs(query(collection(db,'orders'), where('phone','==','+'+phone)));
     }
     if(snap.empty && phone.startsWith('+')){
-      snap = await getDocs(q2(col(db,'orders'), where('phone','==',phone.slice(1))));
+      snap = await getDocs(query(collection(db,'orders'), where('phone','==',phone.slice(1))));
     }
     
     if(snap.empty){

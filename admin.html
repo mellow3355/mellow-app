@@ -1393,7 +1393,12 @@ function renderSchedule(){
   });
   document.getElementById('schedGrid').innerHTML=h;
 }
-window.togDay=function(i,v){ const sede=viewSede==='all'?'caracas':viewSede; const s=sedeSchedules[sede]; if(!s) return; s.days[i].active=v; const so=document.getElementById('so-'+i),sc=document.getElementById('sc-'+i); if(so)so.disabled=!v; if(sc)sc.disabled=!v; renderSchedule(); };
+window.togDay=function(i,v){
+  var sede=viewSede==='all'?'caracas':viewSede;
+  if(!sedeSchedules[sede]) sedeSchedules[sede]={manualClosed:false,days:getDefaultDays()};
+  sedeSchedules[sede].days[i].active=v;
+  renderSchedule();
+};
 window.toggleManual=function(){ const sede=viewSede==='all'?'caracas':viewSede; const s=sedeSchedules[sede]; if(!s) return; s.manualClosed=document.getElementById('manualClose').checked; updateSedeStatus(sede,s); toast(s.manualClosed?'🔴 Sede cerrada':'🟢 Sede abierta'); };
 function updateSedeStatus(sede,s){
   const b=document.getElementById('sedeStatusBadge'),n=document.getElementById('sedeNextTxt'); if(!b||!n) return;
@@ -1407,9 +1412,26 @@ function updateSedeStatus(sede,s){
   } else {b.className='badge b-cancelled';b.textContent='🔴 Cerrada hoy';n.textContent='Sin servicio hoy';}
 }
 window.saveSchedule=async function(){
-  const sede=viewSede==='all'?'caracas':viewSede; const s=sedeSchedules[sede]; if(!s) return;
-  s.days.forEach((d,i)=>{ const o=document.getElementById('so-'+i)?.value, c=document.getElementById('sc-'+i)?.value; if(o)d.open=o; if(c)d.close=c; });
-  try { await setDoc(doc(db,'schedules',sede),s); toast('✅ Horarios guardados · '+(SEDES[sede]?.label||sede),'success'); } catch(e){ toast('Error: '+e.message,'error'); }
+  var sede=viewSede==='all'?'caracas':viewSede;
+  if(!sedeSchedules[sede]) sedeSchedules[sede]={manualClosed:false,days:getDefaultDays()};
+  var s=sedeSchedules[sede];
+  // Read current values from inputs
+  (s.days||[]).forEach(function(d,i){
+    var openEl=document.getElementById('so-'+i);
+    var closeEl=document.getElementById('sc-'+i);
+    if(openEl && openEl.value) d.open=openEl.value;
+    if(closeEl && closeEl.value) d.close=closeEl.value;
+  });
+  try {
+    await setDoc(doc(db,'schedules',sede), {
+      manualClosed: s.manualClosed||false,
+      days: s.days
+    });
+    toast('Horarios guardados: '+((SEDES[sede]&&SEDES[sede].label)||sede),'success');
+  } catch(e){
+    toast('Error al guardar: '+e.message,'error');
+    console.error('saveSchedule error:', e);
+  }
 };
 
 /* ══ TASA ══ */
