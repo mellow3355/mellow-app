@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mellow Caracas - Pedidos</title>
+<title>Mellow Caracas — Pedidos</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 :root{
@@ -274,7 +274,7 @@ footer{background:#110d06;padding:36px 20px 28px;text-align:center;border-top:1p
     <div id="pickupInfo" style="display:none;background:#e8f8ee;border:1.5px solid #a0d8b8;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
           <div style="font-size:.78rem;font-weight:700;color:#1a7a3c;margin-bottom:4px;">📍 Punto de retiro</div>
           <div style="font-size:.84rem;color:#1c1210;line-height:1.5;">La Trinidad, C.C. Trinidad Tepuy, al lado de Mookah</div>
-        </div><div id="pickupInfo" style="display:none;background:#e8f8ee;border:1.5px solid #a0d8b8;border-radius:10px;padding:12px 14px;margin-bottom:14px;"><div style="font-size:.78rem;font-weight:700;color:#1a7a3c;margin-bottom:4px;">📍 Punto de retiro</div><div style="font-size:.84rem;color:#1c1210;line-height:1.5;">La Trinidad, C.C. Trinidad Tepuy, al lado de Mookah</div></div><button class="checkout-btn" onclick="startCheckout()">Proceder al pago</button>
+        </div><div id="pickupInfo" style="display:none;background:#e8f8ee;border:1.5px solid #a0d8b8;border-radius:10px;padding:12px 14px;margin-bottom:14px;"><div style="font-size:.78rem;font-weight:700;color:#1a7a3c;margin-bottom:4px;">📍 Punto de retiro</div><div style="font-size:.84rem;color:#1c1210;line-height:1.5;">La Trinidad, C.C. Trinidad Tepuy, al lado de Mookah</div></div><div id="pickupInfo" style="display:none;background:#e8f8ee;border:1.5px solid #a0d8b8;border-radius:10px;padding:12px 14px;margin-bottom:14px;"><div style="font-size:.78rem;font-weight:700;color:#1a7a3c;margin-bottom:4px;">📍 Punto de retiro</div><div style="font-size:.84rem;color:#1c1210;line-height:1.5;">La Trinidad, C.C. Trinidad Tepuy, al lado de Mookah</div></div><button class="checkout-btn" onclick="startCheckout()">Proceder al pago</button>
   </div>
 </div>
 
@@ -1193,9 +1193,8 @@ async function completeOrder(){
     // Save/update client profile in 'clients' collection (public - no auth needed)
     try {
       var clientId = phone.replace(/[^0-9]/g,'');
-      // Build order summary to store in client doc (for self-lookup without auth)
       var orderSummary = {
-        orderId: '', // will be updated after addDoc
+        orderId: '',
         orderNumber: orderData.orderNumber || 0,
         items: orderData.items || [],
         total: orderData.total || 0,
@@ -1205,6 +1204,22 @@ async function completeOrder(){
         sede: SEDE_KEY,
         createdAt: new Date().toISOString(),
       };
+
+      // Read existing client doc to preserve pastOrders history
+      var existingSnap = await getDoc(doc(db,'clients',clientId));
+      var existingPast = [];
+      if(existingSnap.exists()){
+        var existingData = existingSnap.data();
+        existingPast = existingData.pastOrders || [];
+        // If there was a previous active order, move it to pastOrders
+        if(existingData.activeOrderSummary && existingData.activeOrderSummary.orderId){
+          var prevOrder = existingData.activeOrderSummary;
+          // Only add to history if not already there
+          var alreadyInHistory = existingPast.some(function(p){ return p.orderId === prevOrder.orderId; });
+          if(!alreadyInHistory) existingPast = [prevOrder].concat(existingPast);
+        }
+      }
+
       var clientData = {
         name: name,
         phone: phone,
@@ -1213,6 +1228,7 @@ async function completeOrder(){
         sede: SEDE_KEY,
         hasActiveOrder: true,
         activeOrderSummary: orderSummary,
+        pastOrders: existingPast.slice(0, 20), // keep last 20
         lastOrder: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -1330,7 +1346,17 @@ window.loadProfile = async function(){
     }
     var clientData = clientSnap.data();
     var activeOrder = clientData.activeOrderSummary || null;
+    // If activeOrder is done or cancelled, move it to pastOrders display
     var pastOrders = clientData.pastOrders || [];
+    if(activeOrder && (activeOrder.status === 'done' || activeOrder.status === 'cancelled')){
+      var alreadyInPast = pastOrders.some(function(p){ return p.orderId === activeOrder.orderId; });
+      if(!alreadyInPast) pastOrders = [activeOrder].concat(pastOrders);
+      activeOrder = null;
+    }
+    // Sort pastOrders newest first
+    pastOrders = pastOrders.slice().sort(function(a,b){
+      return (b.createdAt||'') > (a.createdAt||'') ? 1 : -1;
+    });
 
     var statusInfo = {
       new:       {icon:'🆕', label:'Por confirmar', color:'#6b21a8', bg:'#f3e8ff'},
