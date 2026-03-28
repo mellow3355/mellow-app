@@ -477,7 +477,7 @@ footer{background:#110d06;padding:36px 20px 28px;text-align:center;border-top:1p
   </div>
 </footer>
 
-<script>
+<script type="module">
 /* ══ CONFIG ══ */
 const OWNER_WA = '584220329504';
 const VALID_COUPONS = {'MELLOW10':10,'PRIMERAVEZ':15};
@@ -1036,6 +1036,28 @@ function resetAll(){
 }
 
 /* INIT — products loaded from Firebase above */
+
+/* ══ EXPOSE FUNCTIONS TO HTML onclick handlers ══ */
+window.openProduct = openProduct;
+window.changeQtyCard = changeQtyCard;
+window.updateCartItem = updateCartItem;
+window.openCart = openCart;
+window.closeCart = closeCart;
+window.clearCart = clearCart;
+window.setDelivery = setDelivery;
+window.startCheckout = startCheckout;
+window.closeCheckout = closeCheckout;
+window.backStep1 = backStep1;
+window.selPay = selPay;
+window.handleFile = handleFile;
+window.applyCoupon = applyCoupon;
+window.completeOrder = completeOrder;
+window.resetAll = resetAll;
+window.toggleExtra = toggleExtra;
+window.goStep2 = goStep2;
+window.onCoDateChange = onCoDateChange;
+window.openGoogleMaps = openGoogleMaps;
+window.calcCashChange = calcCashChange;
 </script>
 </body>
 </html>
