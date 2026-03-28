@@ -276,11 +276,11 @@ textarea{min-height:70px;resize:vertical;}
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Entrar →</button>
     <div class="login-err" id="loginErr">Usuario o contraseña incorrectos</div>
     <div class="demo-box">
-      <strong>Usuarios de demostración:</strong><br>
-      👑 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bfd0c8d1dacdffd2dad3d3d0c891dcd0d2">[email&#160;protected]</a> · owner2025<br>
-      📍 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6f0c0e1d0e0c0e1c2f020a03030018410c0002">[email&#160;protected]</a> · ccs2025<br>
-      📍 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4624273437332f352f2b233229062b232a2a29316825292b">[email&#160;protected]</a> · bqto2025<br>
-      📍 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d0bdb1a2b1b3b1b9b2bf90bdb5bcbcbfa7feb3bfbd">[email&#160;protected]</a> · mcbo2025
+      <strong>Usuarios:</strong><br>
+      👑 owner@mellow.com · owner2025<br>
+      📍 caracas@mellow.com · ccs2025<br>
+      📍 barquisimeto@mellow.com · bqto2025<br>
+      📍 maracaibo@mellow.com · mcbo2025
     </div>
   </div>
 </div>
@@ -622,7 +622,7 @@ textarea{min-height:70px;resize:vertical;}
 <div class="toast" id="toast"></div>
 
 <!-- ══════════════ FIREBASE + APP SCRIPT ══════════════ -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
+<script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, getDocs, setDoc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
@@ -678,9 +678,9 @@ const SB = {new:'b-new',confirmed:'b-confirmed',transit:'b-transit',done:'b-done
 const PM = {zelle:'Zelle 💵',pago_movil:'Pago Móvil 📱',efectivo:'Efectivo $',combinado:'Combinado',punto:'Punto de Venta'};
 
 function isBdToday(bd){ if(!bd) return false; const t=new Date(),d=new Date(bd+'T12:00:00'); return d.getMonth()===t.getMonth()&&d.getDate()===t.getDate(); }
-function fmtBd(bd){ if(!bd) return '—'; return new Date(bd+'T12:00:00').toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric'}); }
+function fmtBd(bd){ if(!bd) return '-'; return new Date(bd+'T12:00:00').toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric'}); }
 function timeAgo(ts){
-  if(!ts) return '—';
+  if(!ts) return '-';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   const diff = Math.floor((Date.now()-d.getTime())/1000);
   if(diff<60) return diff+'s';
@@ -1378,7 +1378,7 @@ window.saveSchedule=async function(){
 /* ══ TASA ══ */
 function updateTasaDisplay(){
   const d=document.getElementById('tasaDisplay'),u=document.getElementById('tasaUpd'),p=document.getElementById('tasaPill');
-  if(d) d.textContent=tasaActual?tasaActual.toFixed(2)+' Bs.':'— Bs.';
+  if(d) d.textContent=tasaActual?tasaActual.toFixed(2)+' Bs.':'-';
   if(p) p.textContent='💱 '+(tasaActual?'Bs.'+tasaActual.toFixed(2):'—');
   if(u&&tasaHist.length) u.textContent='Actualizado: '+tasaHist[0].dateLabel+' · '+tasaHist[0].src;
 }
@@ -1478,3 +1478,7 @@ function renderAnalytics(){
   setTimeout(()=>{
     const c1=document.getElementById('chartSedes'),c2=document.getElementById('chartProd');
     if(c1&&!c1._c){c1._c=new Chart(c1.getContext('2d'),{type:'bar',data:{labels:sedeKeys.map(sk=>SEDES[sk].label),datasets:[{label:'$',data:sedeKeys.map(sk=>ordersCache.filter(o=>o.sede===sk&&o.status!=='cancelled').reduce((s,o)=>s+(o.total||0),0)),backgroundColor:sedeKeys.map(
+</script>
+
+</body>
+</html>
