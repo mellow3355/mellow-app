@@ -122,7 +122,10 @@ body{
 .products-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:14px;
+  gap:12px;
+}
+@media(min-width:600px){
+  .products-grid{grid-template-columns:1fr 1fr 1fr 1fr;}
 }
 
 /* ── PRODUCT CARD ── */
@@ -147,7 +150,7 @@ body{
   background:var(--warm);
   min-height:120px;
 }
-.p-body{padding:10px 12px 42px;}
+.p-body{padding:8px 10px 36px;}
 .p-name{
   font-size:.84rem;font-weight:500;
   color:var(--text);line-height:1.3;
@@ -618,13 +621,9 @@ body{
 }
 
 /* Responsive */
-@media(max-width:360px){
-  .products-grid{grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:400px){
   .p-name{font-size:.78rem;}
-}
-@media(min-width:480px){
-  .products-grid{grid-template-columns:1fr 1fr 1fr;}
-  .section{padding:28px 22px;}
+  .products-grid{gap:8px;}
 }
 
 /* ── MISSING CLASSES (checkout, steps, totals) ── */
@@ -1254,7 +1253,9 @@ function renderProducts(){
       html += '<div style="position:absolute;top:8px;left:8px;background:#fff3cd;color:#856404;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:100px;">Últimos ' + stockVal + '</div>';
     }
 
-    html += '<img class="p-img" src="' + (p.img || '') + '" alt="' + p.name + '" loading="lazy">';
+    var imgSrc = p.img || '';
+    html += '<img class="p-img" src="' + imgSrc + '" alt="' + p.name + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
+    html += '<div style="display:none;width:100%;aspect-ratio:1;background:var(--warm);align-items:center;justify-content:center;flex-direction:column;gap:8px;"><span style="font-size:2rem;">🎂</span><span style="font-size:.7rem;color:var(--sub);">'+p.name+'</span></div>';
     html += '<div class="p-body">';
     html += '<div class="p-name">' + p.name + '</div>';
     html += '<div class="p-price">REF ' + (p.price || 0).toFixed(2) + '</div>';
