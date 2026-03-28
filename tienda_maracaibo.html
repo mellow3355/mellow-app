@@ -291,7 +291,7 @@ footer{background:#110d06;padding:36px 20px 28px;text-align:center;border-top:1p
     <div class="co-sub">¿Cómo te contactamos?</div>
 
     <div class="field" id="f-name"><label>Nombre completo</label><input type="text" id="coName" placeholder="Ej: María González"/><div class="err">Ingresa tu nombre</div></div>
-    <div class="field" id="f-phone"><label>WhatsApp</label><input type="tel" id="coPhone" placeholder="+584220329504"/><div class="err">Ingresa tu número</div></div>
+    <div class="field" id="f-phone"><label>WhatsApp</label><input type="tel" id="coPhone" placeholder="+58 424 270 8381"/><div class="err">Ingresa tu número</div></div>
     <div class="field"><label>Correo (opcional)</label><input type="email" id="coEmail" placeholder="tu@correo.com"/></div>
     <div class="field"><label>Fecha de nacimiento</label><input type="date" id="coBirthdate"/></div>
 
@@ -472,7 +472,7 @@ footer{background:#110d06;padding:36px 20px 28px;text-align:center;border-top:1p
   <img class="footer-logo" src="https://ik.imagekit.io/d3ddbxom7/tr:,h-200/Negocios%2Fmellow%2FPagina%2Fpreview_business_logo_1769011680567" alt="Mellow"/>
   <div class="footer-text">
     LA TRINIDAD, C.C. TRINIDAD TEPUY, AL LADO DE MOOKAH<br>
-    <a href="tel:+584242708381">+584220329504</a><br>
+    <a href="tel:+584242708381">+58 424 270 8381</a><br>
     © 2025 Mellow Cake Shop
   </div>
 </footer>
@@ -483,7 +483,7 @@ const OWNER_WA = '584220329504';
 const VALID_COUPONS = {'MELLOW10':10,'PRIMERAVEZ':15};
 const PAY_DATA = {
   zelle:'Zelle: <b>mellowcakeshop@gmail.com</b>',
-  pago_movil:'Banco: <b>Banesco</b><br>Teléfono: <b>+584220329504</b><br>RIF: <b>J-000000000</b>',
+  pago_movil:'Banco: <b>Banesco</b><br>Teléfono: <b>+58 424 270 8381</b><br>RIF: <b>J-000000000</b>',
   efectivo:'Paga en <b>efectivo al retirar</b> en la sede.',
   combinado:'Indica cómo dividirás el monto entre los métodos disponibles.',
   punto:'Punto de venta disponible <b>en sede</b>.',
@@ -558,32 +558,37 @@ function renderProducts(){
     grid.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub);grid-column:1/-1;">Cargando productos...</div>';
     return;
   }
-  grid.innerHTML=PRODUCTS.map(p=>{
-    const outOfStock = !p.available || (p.stock !== undefined && p.stock <= 0);
-    const stockLabel = p.stock !== undefined && p.stock > 0 && p.stock <= 5
-      ? `<div style="position:absolute;top:8px;left:8px;background:#fff3cd;color:#856404;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:100px;">Últimos ${p.stock}</div>`
-      : '';
-    return `
-    <div class="p-card ${outOfStock?'sold-out':''}" onclick="${outOfStock?'':'openProduct(''+p.id+'')'}">
-      ${outOfStock?'<div class="sold-tag">Agotado</div>':''}
-      ${stockLabel}
-      <img class="p-img" src="${p.img||''}" alt="${p.name}" loading="lazy" onerror="this.style.background='var(--warm)'"/>
-      <div class="p-body">
-        <div class="p-name">${p.name}</div>
-        <div class="p-price">REF ${(p.price||0).toFixed(2)}</div>
-      </div>
-      ${!outOfStock?`
-        <div class="p-qty" id="pqty-${p.id}">
-          <button class="qty-btn" onclick="event.stopPropagation();changeQtyCard('${p.id}',-1)">−</button>
-          <span class="qty-num" id="pqnum-${p.id}">0</span>
-          <button class="qty-btn" onclick="event.stopPropagation();changeQtyCard('${p.id}',1)">+</button>
-        </div>
-        <button class="p-add" id="padd-${p.id}" onclick="event.stopPropagation();openProduct('${p.id}')">+</button>
-      `:''}
-    </div>`;
+  grid.innerHTML=PRODUCTS.map(function(p){
+    var sid = String(p.id);
+    var outOfStock = !p.available || (p.stock !== undefined && p.stock <= 0);
+    var stockLabel = '';
+    if(p.stock !== undefined && p.stock > 0 && p.stock <= 5){
+      stockLabel = '<div style="position:absolute;top:8px;left:8px;background:#fff3cd;color:#856404;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:100px;">Últimos '+p.stock+'</div>';
+    }
+    var cardClass = 'p-card' + (outOfStock ? ' sold-out' : '');
+    var onclickAttr = outOfStock ? '' : 'onclick="openProduct(''+sid+'')"';
+    var soldTag = outOfStock ? '<div class="sold-tag">Agotado</div>' : '';
+    var qtyHtml = '';
+    if(!outOfStock){
+      qtyHtml = '<div class="p-qty" id="pqty-'+sid+'">'
+        + '<button class="qty-btn" onclick="event.stopPropagation();changeQtyCard(''+sid+'',-1)">−</button>'
+        + '<span class="qty-num" id="pqnum-'+sid+'">0</span>'
+        + '<button class="qty-btn" onclick="event.stopPropagation();changeQtyCard(''+sid+'',1)">+</button>'
+        + '</div>'
+        + '<button class="p-add" id="padd-'+sid+'" onclick="event.stopPropagation();openProduct(''+sid+'')">+</button>';
+    }
+    return '<div class="'+cardClass+'" '+onclickAttr+'>'
+      + soldTag
+      + stockLabel
+      + '<img class="p-img" src="'+(p.img||'')+'" alt="'+p.name+'" loading="lazy" onerror="this.style.background='var(--warm)'">'
+      + '<div class="p-body">'
+      + '<div class="p-name">'+p.name+'</div>'
+      + '<div class="p-price">REF '+(p.price||0).toFixed(2)+'</div>'
+      + '</div>'
+      + qtyHtml
+      + '</div>';
   }).join('');
 }
-
 /* ══ PRODUCT MODAL ══ */
 function openProduct(id){
   currentProduct=PRODUCTS.find(p=>p.id===id||p.id===String(id)); if(!currentProduct) return;
