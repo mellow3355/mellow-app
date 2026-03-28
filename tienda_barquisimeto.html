@@ -1317,25 +1317,20 @@ window.loadProfile = async function(){
   resultsEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--sub);">Buscando tus pedidos...</div>';
 
   try {
-    // Query orders - works with open rules
-    var snap = await getDocs(query(collection(db,'orders'), where('phone','==',phone)));
-    if(snap.empty){
-      var altPhone = phone.startsWith('+') ? phone.slice(1) : '+'+phone;
-      snap = await getDocs(query(collection(db,'orders'), where('phone','==',altPhone)));
+    // Read from clients collection (public - no auth needed)
+    var clientId = phone.replace(/[^0-9]/g,'');
+    var clientSnap = await getDoc(doc(db,'clients',clientId));
+    if(!clientSnap.exists()){
+      var altNum = phone.startsWith('+') ? phone.slice(1) : '+'+phone;
+      clientSnap = await getDoc(doc(db,'clients',altNum.replace(/[^0-9]/g,'')));
     }
-    if(snap.empty){
-      var cleanPhone = phone.replace(/[^0-9+]/g,'');
-      snap = await getDocs(query(collection(db,'orders'), where('phone','==',cleanPhone)));
-    }
-
-    if(snap.empty){
-      resultsEl.innerHTML = '<div style="background:#fff;border-radius:12px;padding:24px;text-align:center;color:var(--sub);">No encontramos pedidos con ese numero.</div>';
+    if(!clientSnap.exists()){
+      resultsEl.innerHTML = '<div style="background:#fff;border-radius:12px;padding:24px;text-align:center;color:var(--sub);">No encontramos pedidos con ese numero.<br><small>Usa el mismo numero con el que hiciste el pedido.</small></div>';
       return;
     }
-
-    var orders = snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
-    var activeOrder = orders.find(function(o){ return ['new','confirmed','transit'].includes(o.status); });
-    var pastOrders = orders.filter(function(o){ return ['done','cancelled'].includes(o.status); });
+    var clientData = clientSnap.data();
+    var activeOrder = clientData.activeOrderSummary || null;
+    var pastOrders = clientData.pastOrders || [];
 
     var statusInfo = {
       new:       {icon:'🆕', label:'Por confirmar', color:'#6b21a8', bg:'#f3e8ff'},
