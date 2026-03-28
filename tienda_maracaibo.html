@@ -1349,32 +1349,44 @@ window.loadProfile = async function(){
     // If activeOrder is done or cancelled, move it to pastOrders display
     var pastOrders = clientData.pastOrders || [];
 
-    // Fetch completed/cancelled orders directly from Firestore (fills history gaps for old orders)
+    // Fetch ALL orders for this phone from Firestore to build complete history
     try {
       var ordSnap = await getDocs(query(collection(db,'orders'), where('phone','==',phone)));
       if(ordSnap.empty){
-        var altP = phone.startsWith('+') ? phone.slice(1) : '+'+phone;
-        ordSnap = await getDocs(query(collection(db,'orders'), where('phone','==',altP)));
+        var altP2 = phone.startsWith('+') ? phone.slice(1) : '+'+phone;
+        ordSnap = await getDocs(query(collection(db,'orders'), where('phone','==',altP2)));
       }
       ordSnap.docs.forEach(function(d){
         var od = d.data();
-        var isDone = od.status==='done' || od.status==='cancelled';
-        if(isDone){
+        var isComplete = od.status==='done' || od.status==='cancelled';
+        var isActive = od.status==='new' || od.status==='confirmed' || od.status==='transit';
+        // Sync active order status from Firestore
+        if(isActive && activeOrder && activeOrder.orderId === d.id){
+          activeOrder.status = od.status;
+          activeOrder.motoName = od.motoName || activeOrder.motoName;
+        }
+        // Add completed orders to history if not already there
+        if(isComplete){
           var alreadyIn = pastOrders.some(function(p){ return p.orderId===d.id; });
           if(!alreadyIn){
             pastOrders.push({
               orderId: d.id,
               orderNumber: od.orderNumber || null,
               items: od.items || [],
-              total: od.total || 0,
+              total: od.total !== undefined ? od.total : 0,
               status: od.status,
               deliveryDate: od.deliveryDate || '',
-              createdAt: od.createdAt && od.createdAt.toDate ? od.createdAt.toDate().toISOString() : (od.createdAt||''),
+              deliveryTime: od.deliveryTime || '',
+              createdAt: od.createdAt && od.createdAt.toDate ? od.createdAt.toDate().toISOString() : '',
             });
           }
         }
       });
-    } catch(e2){ console.log('Orders direct fetch:', e2.message); }
+    } catch(e2){
+      // Permission error - orders collection requires auth
+      // pastOrders from clients doc is all we can show
+      console.log('Orders fallback skipped:', e2.code || e2.message);
+    }
 
     if(activeOrder && (activeOrder.status === 'done' || activeOrder.status === 'cancelled')){
       var alreadyInPast = pastOrders.some(function(p){ return p.orderId === activeOrder.orderId; });

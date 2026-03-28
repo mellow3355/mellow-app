@@ -815,6 +815,7 @@ function initApp(){
   loadProducts();
   loadTasa();
   loadSchedules();
+  loadMotorizados();
   nav('dashboard');
 }
 
@@ -857,6 +858,13 @@ window.ownerSwitch = function(sede, el){
 };
 
 /* ══ FIRESTORE: ORDERS REALTIME ══ */
+function ordNum(o){
+  if(o.orderNumber) return '#'+o.orderNumber;
+  // Find position in cache as fallback
+  var idx = ordersCache.findIndex(function(x){ return x.id===o.id; });
+  return idx>=0 ? '#'+(ordersCache.length-idx) : '#?';
+}
+
 function subscribeToOrders(){
   if(unsubOrders) unsubOrders();
   // Use simple query without composite index requirement
@@ -951,7 +959,7 @@ function renderDashboard(){
 
   document.getElementById('dashTable').innerHTML=orders.slice(0,10).map(o=>`
     <tr style="cursor:pointer;" onclick="viewOrder('${o.id}')">
-      <td><strong style="color:var(--blue)">#${o.id?.slice(-6)||'—'}</strong></td>
+      <td><strong style="color:var(--blue)">#${ordNum(o).replace('#','')||'—'}</strong></td>
       <td>${sedeBadgeHtml(o.sede)}</td>
       <td><strong>${o.client||'—'}</strong>${isBdToday(o.birthdate)?' 🎂':''}</td>
       <td style="font-size:.76rem;color:var(--sub)">${(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—'}${o.vela?' 🕯️':''}${o.nota?' 📝':''}</td>
@@ -983,7 +991,7 @@ function renderOrders(){
         : '<span class="no-voucher">Sin comp.</span>';
 
     return `<tr style="cursor:pointer;" onclick="viewOrder('${o.id}')">
-      <td><strong style="color:var(--blue)">#${(o.id||'').slice(-6)}</strong></td>
+      <td><strong style="color:var(--blue)">${ordNum(o)}</strong></td>
       <td>${sedeBadgeHtml(o.sede)}</td>
       <td>${timeAgoBadge(o.createdAt,o.status)||'—'}</td>
       <td><strong>${o.client||'—'}</strong>${isBdToday(o.birthdate)?' 🎂':''}</td>
@@ -1064,7 +1072,7 @@ window.viewOrder = function(id){
   const curIdx=steps.findIndex(s=>s.k===o.status);
   const itemsStr=(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—';
 
-  document.getElementById('oModalTitle').innerHTML=`Orden #${(o.id||'').slice(-6)} ${sedeBadgeHtml(o.sede)}`;
+  document.getElementById('oModalTitle').innerHTML=`Orden ${ordNum(o)} ${sedeBadgeHtml(o.sede)}`;
   document.getElementById('oModalBody').innerHTML=`
     ${bdToday?`<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="font-size:1.2rem;">🎂</span><div style="font-weight:700;color:#b8860b;font-size:.88rem;">¡Hoy cumpleaños de ${(o.client||'').split(' ')[0]}!</div></div>`:''}
     ${o.status==='cancelled'?`<div style="background:var(--red-l);border-radius:8px;padding:10px 14px;font-size:.84rem;font-weight:700;color:var(--red);margin-bottom:12px;">❌ Orden cancelada</div>`:
@@ -1111,7 +1119,7 @@ window.viewOrder = function(id){
 window.openVoucher = function(ordId){
   voucherOrdId=ordId;
   const o=ordersCache.find(x=>x.id===ordId); if(!o) return;
-  document.getElementById('voucherTitle').textContent=`Comprobante · #${(o.id||'').slice(-6)}`;
+  document.getElementById('voucherTitle').textContent=`Comprobante · ${ordNum(o)}`;
   const img=document.getElementById('voucherImgFull'), noImg=document.getElementById('voucherNoImg');
   if(o.voucherUrl){ img.src=o.voucherUrl; img.style.display='block'; noImg.style.display='none'; }
   else { img.style.display='none'; noImg.style.display='block'; }
@@ -1129,16 +1137,30 @@ window.openVoucher = function(ordId){
 window.confirmFromVoucher = function(){ if(voucherOrdId){ chgStatus(voucherOrdId,'confirmed'); closeModal('voucherModal'); } };
 
 /* ══ MOTO ASSIGN ══ */
-let sedeMotorizados = {
-  caracas:      [{id:'j1',name:'Juan Pérez',phone:'+584121234567',color:'#2a5c9a',deliveries:18},{id:'e1',name:'Enrique Gómez',phone:'+584147654321',color:'#1a7a3c',deliveries:12}],
-  barquisimeto: [{id:'l1',name:'Luis Herrera',phone:'+584241991234',color:'#c75000',deliveries:8}],
-  maracaibo:    [{id:'c1',name:'Carlos Rivas',phone:'+584261881234',color:'#8b3a8b',deliveries:5}],
-};
+let sedeMotorizados = { caracas:[], barquisimeto:[], maracaibo:[] };
+
+async function loadMotorizados(){
+  try {
+    const snap = await getDocs(collection(db,'motorizados'));
+    // Reset
+    Object.keys(sedeMotorizados).forEach(k => sedeMotorizados[k] = []);
+    snap.docs.forEach(d => {
+      const m = Object.assign({id:d.id}, d.data());
+      const sede = m.sede || 'caracas';
+      if(!sedeMotorizados[sede]) sedeMotorizados[sede] = [];
+      if(!m.deliveries) m.deliveries = 0;
+      sedeMotorizados[sede].push(m);
+    });
+  } catch(e) {
+    console.log('loadMotorizados error:', e.message);
+  }
+}
 let assignOrdId2=null, selMotoId=null;
 
-window.openMotoAssignInline = function(ordId){
+window.openMotoAssignInline = async function(ordId){
   assignOrdId2=ordId; selMotoId=null;
   const o=ordersCache.find(x=>x.id===ordId); if(!o) return;
+  await loadMotorizados();
   const motos=sedeMotorizados[o.sede]||[];
   document.getElementById('oModalTitle').textContent='Asignar motorizado · #'+(o.orderNumber||o.id.slice(-6));
   if(!motos.length){
@@ -1181,7 +1203,7 @@ window.confirmMotoAssign2 = async function(){
     const msgC=encodeURIComponent(`Hola ${(o.client||'').split(' ')[0]} 👋🏼\n\n🛵 *Su pedido está en camino* con nuestro motorizado *${m.name}*.\n📱 Contacto: ${m.phone}${mapLink}\n\n¡Gracias por elegir Mellow! 🎂`);
     window.open(`https://wa.me/${(o.phone||'').replace(/\D/g,'')}?text=${msgC}`,'_blank');
     const itemsStr=(o.items||[]).map(i=>i.name+' x'+i.qty).join(', ')||'—';
-    const msgM=encodeURIComponent(`🛵 *ENTREGA MELLOW #${(o.id||'').slice(-6)}*\n📍 ${SEDES[o.sede]?.label||o.sede}\n\n👤 ${o.client} · ${o.phone}\n📦 ${itemsStr}${velaLine}${notaLine}\n📍 ${o.address||'Retiro en tienda'}${o.lat?'\n🗺️ https://www.google.com/maps?q='+o.lat+','+o.lng:''}\n📅 ${o.deliveryDate} ${o.deliveryTime}`);
+    const msgM=encodeURIComponent(`🛵 *ENTREGA MELLOW ${ordNum(o)}*\n📍 ${SEDES[o.sede]?.label||o.sede}\n\n👤 ${o.client} · ${o.phone}\n📦 ${itemsStr}${velaLine}${notaLine}\n📍 ${o.address||'Retiro en tienda'}${o.lat?'\n🗺️ https://www.google.com/maps?q='+o.lat+','+o.lng:''}\n📅 ${o.deliveryDate} ${o.deliveryTime}`);
     setTimeout(()=>window.open(`https://wa.me/${m.phone.replace(/\D/g,'')}?text=${msgM}`,'_blank'),600);
     closeModal('orderModal');
     toast(`🛵 Asignado a ${m.name} — notificados`, 'success');
@@ -1371,7 +1393,7 @@ function renderMotorizados(){
   const hist=orders.filter(o=>o.sede===sede&&o.motoId);
   document.getElementById('motoHistBody').innerHTML=hist.map(o=>`
     <tr><td><strong>${motos.find(m=>m.id===o.motoId)?.name||'—'}</strong></td>
-    <td><span style="color:var(--blue);cursor:pointer;font-weight:700;" onclick="viewOrder('${o.id}')">#${(o.id||'').slice(-6)}</span></td>
+    <td><span style="color:var(--blue);cursor:pointer;font-weight:700;" onclick="viewOrder('${o.id}')">${ordNum(o)}</span></td>
     <td>${o.client||'—'}</td><td style="font-size:.75rem;color:var(--sub);max-width:130px;">${o.address||'Retiro'}</td>
     <td style="font-size:.78rem;">${o.deliveryDate||'—'} ${o.deliveryTime||''}</td>
     <td><span class="badge ${SB[o.status]||'b-new'}">${SL[o.status]||'—'}</span></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--sub)">Sin entregas</td></tr>';
