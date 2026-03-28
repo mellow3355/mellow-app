@@ -475,9 +475,16 @@ const SEDE_KEY = 'barquisimeto';
 const VALID_COUPONS = {'MELLOW10':10,'PRIMERAVEZ':15};
 // Pay data loaded dynamically from Firebase
 function getPayData(){
+  var hasPagoMovil = sedePayInfo.banco || sedePayInfo.celular || sedePayInfo.cedula;
+  var pagoMovilHtml = hasPagoMovil
+    ? '<strong>Banco:</strong> ' + (sedePayInfo.banco||'-') + '<br><strong>Telefono:</strong> ' + (sedePayInfo.celular||'-') + '<br><strong>Cedula:</strong> ' + (sedePayInfo.cedula||'-')
+    : '<span style="color:var(--sub)">Cargando datos de pago...</span>';
+  var zelleHtml = sedePayInfo.zelle
+    ? '<strong>Zelle:</strong> ' + sedePayInfo.zelle
+    : '<span style="color:var(--sub)">Cargando datos de pago...</span>';
   return {
-    zelle: sedePayInfo.zelle ? 'Zelle: <b>' + sedePayInfo.zelle + '</b>' : 'Zelle: consultar con la tienda',
-    pago_movil: 'Banco: <b>' + (sedePayInfo.banco||'Consultar') + '</b><br>Telefono: <b>' + (sedePayInfo.celular||'Consultar') + '</b><br>Cedula: <b>' + (sedePayInfo.cedula||'Consultar') + '</b>',
+    zelle: zelleHtml,
+    pago_movil: pagoMovilHtml,
     efectivo: 'Paga en <b>efectivo al retirar</b> en la sede.',
     combinado: 'Indica como dividiras el monto entre los metodos disponibles.',
     punto: 'Punto de venta disponible <b>en sede</b>.',
@@ -511,8 +518,19 @@ let sedePayInfo = { banco:'', celular:'', cedula:'', zelle:'' };
 async function loadSedePayInfo(){
   try {
     var snap = await getDoc(doc(db, 'settings', 'pagos_' + SEDE_KEY));
-    if(snap.exists()) sedePayInfo = snap.data();
-  } catch(e){ console.log('No pay info:', e.message); }
+    if(snap.exists()){
+      sedePayInfo = snap.data();
+      console.log('Pay info:', SEDE_KEY, sedePayInfo.banco, sedePayInfo.celular);
+      // Refresh pay display if already on payment screen
+      if(selectedPayMethod==='pago_movil'||selectedPayMethod==='zelle'){
+        var dt=document.getElementById('payDetailsText');
+        var pd=getPayData();
+        if(dt&&pd[selectedPayMethod]) dt.innerHTML=pd[selectedPayMethod];
+      }
+    } else {
+      console.log('No pagos_'+SEDE_KEY+' doc in Firebase. Configure in admin -> Datos de pago');
+    }
+  } catch(e){ console.log('Pay info error:', e.message); }
 }
 
 async function loadSedeSchedule(){
@@ -848,18 +866,26 @@ function goStep2(){
 
 /* PAYMENT */
 // Tasa from admin (shared via localStorage or hardcoded - update as needed)
-let storeTasa = parseFloat(localStorage.getItem('mellow_tasa')||'0') || 0;
+let storeTasa = 0; // loaded async from Firebase tasa collection
 
 function selPay(method){
   selectedPayMethod=method;
-  document.querySelectorAll('.pay-opt').forEach(el=>el.classList.remove('selected'));
-  document.getElementById('pay-'+method)?.classList.add('selected');
+  document.querySelectorAll('.pay-opt').forEach(function(el){ el.classList.remove('selected'); });
+  var selEl=document.getElementById('pay-'+method);
+  if(selEl) selEl.classList.add('selected');
   document.getElementById('payErr').style.display='none';
 
-  const box=document.getElementById('payDetailsBox');
-  const needsVoucher=method!=='efectivo'&&method!=='punto';
-  var pd=getPayData(); if(pd[method]){box.style.display='block';document.getElementById('payDetailsText').innerHTML=pd[method];}
-  else box.style.display='none';
+  var box=document.getElementById('payDetailsBox');
+  var needsVoucher=method==='pago_movil'||method==='zelle'||method==='combinado';
+
+  // Get fresh pay data and show
+  var pd=getPayData();
+  if(pd[method]){
+    box.style.display='block';
+    document.getElementById('payDetailsText').innerHTML=pd[method];
+  } else {
+    box.style.display='none';
+  }
   document.getElementById('voucherSection').style.display=needsVoucher?'block':'none';
 
   // Show/hide Bs conversion box
@@ -868,17 +894,25 @@ function selPay(method){
   bsBox.style.display='none'; cashBox.style.display='none';
 
   if(method==='pago_movil'||method==='punto'){
-    const total=getTotal();
+    var total=getTotal();
+    bsBox.style.display='block';
     if(storeTasa>0){
-      bsBox.style.display='block';
-      document.getElementById('bsTasaLabel').textContent='Bs. '+storeTasa.toFixed(2)+' / $1';
-      document.getElementById('bsUsdLabel').textContent='$'+total.toFixed(2);
+      document.getElementById('bsTasaLabel').textContent='Tasa: Bs. '+storeTasa.toFixed(2)+' / $1';
+      document.getElementById('bsUsdLabel').textContent='Total en $: $'+total.toFixed(2);
       document.getElementById('bsAmountLabel').textContent='Bs. '+(total*storeTasa).toFixed(2);
     } else {
-      bsBox.style.display='block';
-      document.getElementById('bsTasaLabel').textContent='No disponible';
-      document.getElementById('bsUsdLabel').textContent='$'+total.toFixed(2);
-      document.getElementById('bsAmountLabel').textContent='Consultar en tienda';
+      document.getElementById('bsTasaLabel').textContent='Cargando tasa...';
+      document.getElementById('bsUsdLabel').textContent='Total en $: $'+total.toFixed(2);
+      document.getElementById('bsAmountLabel').textContent='Calculando...';
+      loadStoreTasa().then(function(){
+        if(storeTasa>0){
+          document.getElementById('bsTasaLabel').textContent='Tasa: Bs. '+storeTasa.toFixed(2)+' / $1';
+          document.getElementById('bsAmountLabel').textContent='Bs. '+(total*storeTasa).toFixed(2);
+        } else {
+          document.getElementById('bsTasaLabel').textContent='Tasa no disponible';
+          document.getElementById('bsAmountLabel').textContent='Consultar en tienda';
+        }
+      });
     }
   } else if(method==='efectivo'){
     cashBox.style.display='block';
@@ -934,7 +968,7 @@ function applyCoupon(){
 
 /* FIREBASE */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getFirestore, collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getFirestore, collection, addDoc, updateDoc, doc, serverTimestamp, getDocs, getDoc, query, orderBy, where, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
 const FB_CONFIG = {
@@ -953,8 +987,15 @@ const storage = getStorage(fbApp);
 async function loadStoreTasa(){
   try {
     const snap = await getDocs(query(collection(db,'tasa'), orderBy('createdAt','desc'), limit(1)));
-    if(!snap.empty){ storeTasa = snap.docs[0].data().rate; }
-  } catch(e){ console.log('No tasa data'); }
+    if(!snap.empty){
+      storeTasa = parseFloat(snap.docs[0].data().rate) || 0;
+      console.log('Tasa loaded from Firebase:', storeTasa);
+      // If payment method is already selected, refresh the Bs display
+      if(selectedPayMethod==='pago_movil'||selectedPayMethod==='punto'){
+        selPay(selectedPayMethod);
+      }
+    }
+  } catch(e){ console.log('No tasa data:', e.message); }
 }
 loadStoreTasa();
 
@@ -1080,6 +1121,25 @@ async function completeOrder(){
     // Save to Firestore
     await addDoc(collection(db,'orders'), orderData);
 
+    // Reduce stock for each item ordered
+    try {
+      var stockUpdates = [];
+      cart.forEach(function(item){
+        var prod = PRODUCTS.find(function(p){ return String(p.id)===String(item.productId); });
+        if(prod && prod.stock !== undefined && prod.stock > 0){
+          var newStock = Math.max(0, prod.stock - item.qty);
+          var stockField = 'stock_' + SEDE_KEY;
+          var updateData = {};
+          updateData[stockField] = newStock;
+          stockUpdates.push(
+            updateDoc(doc(db,'products',String(item.productId)), updateData)
+          );
+          prod.stock = newStock; // update local copy too
+        }
+      });
+      if(stockUpdates.length) await Promise.all(stockUpdates);
+    } catch(stockErr){ console.log('Stock update error:', stockErr.message); }
+
     // Send WhatsApp
     const items=cart.map(c=>`• ${c.name} x${c.qty}`).join('\n');
     const bdLine=birthdate?`\n🎂 *Cumpleaños:* ${birthdate}`:'';
@@ -1087,7 +1147,10 @@ async function completeOrder(){
     const addrLine=deliveryMode==='delivery'?`\n🏠 *Dirección:* ${addr}${ref2?'\n📌 *Ref:* '+ref2:''}`:'';
     const cashAmt=parseFloat(document.getElementById('cashAmount')?.value)||0;
     const cashLine=selectedPayMethod==='efectivo'&&cashAmt>0?`\n💵 *Paga con:* $${cashAmt.toFixed(2)} · *Vuelto:* $${(cashAmt-total).toFixed(2)}`:'';
-    const bsLine=(selectedPayMethod==='pago_movil'||selectedPayMethod==='punto')&&storeTasa>0?`\n💱 *En Bs:* Bs. ${(total*storeTasa).toFixed(2)} (tasa ${storeTasa})`:'';
+    var bsLine='';
+    if(selectedPayMethod==='pago_movil'||selectedPayMethod==='punto'){
+      bsLine = storeTasa>0 ? '\n💱 *Total en Bs:* Bs. '+(total*storeTasa).toFixed(2)+' (Tasa Bs.'+storeTasa.toFixed(2)+'/$1)' : '\n💱 Pago Movil - confirmar Bs. con la tienda';
+    }
 
     const msg=encodeURIComponent(
 `🎂 *NUEVO PEDIDO - MELLOW*
