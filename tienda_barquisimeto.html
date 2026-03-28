@@ -1180,44 +1180,29 @@ async function completeOrder(){
     // Save to Firestore
     await addDoc(collection(db,'orders'), orderData);
 
-    // Save/update client profile in 'clients' collection
+    // Save/update client profile in 'clients' collection (no auth needed)
     try {
+      var clientId = phone.replace(/[^0-9]/g,'');
       var clientData = {
         name: name,
         phone: phone,
-        email: document.getElementById('coEmail')?.value?.trim() || '',
-        birthdate: document.getElementById('coBirthdate')?.value || '',
+        email: (document.getElementById('coEmail')&&document.getElementById('coEmail').value.trim())||'',
+        birthdate: (document.getElementById('coBirthdate')&&document.getElementById('coBirthdate').value)||'',
         sede: SEDE_KEY,
+        hasActiveOrder: true,
         lastOrder: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
-      // Use phone as document ID for easy lookup and deduplication
-      var clientId = phone.replace(/[^0-9]/g,'');
       await setDoc(doc(db,'clients',clientId), clientData, {merge:true});
-      // Increment order count
-      await updateDoc(doc(db,'clients',clientId), {
-        orderCount: (window._clientOrderCount || 0) + 1
-      });
     } catch(clientErr){ console.log('Client save error:', clientErr.message); }
 
-    // Reduce stock for each item ordered
+    // Store ordered items in client doc so admin can update stock
+    // (direct product write requires auth, so admin handles stock reduction)
     try {
-      var stockUpdates = [];
-      cart.forEach(function(item){
-        var prod = PRODUCTS.find(function(p){ return String(p.id)===String(item.productId); });
-        if(prod && prod.stock !== undefined && prod.stock > 0){
-          var newStock = Math.max(0, prod.stock - item.qty);
-          var stockField = 'stock_' + SEDE_KEY;
-          var updateData = {};
-          updateData[stockField] = newStock;
-          stockUpdates.push(
-            updateDoc(doc(db,'products',String(item.productId)), updateData)
-          );
-          prod.stock = newStock; // update local copy too
-        }
-      });
-      if(stockUpdates.length) await Promise.all(stockUpdates);
-    } catch(stockErr){ console.log('Stock update error:', stockErr.message); }
+      var clientId2 = phone.replace(/[^0-9]/g,'');
+      var orderedItems = cart.map(function(item){ return {id:String(item.productId),qty:item.qty,sede:SEDE_KEY}; });
+      await setDoc(doc(db,'clients',clientId2), {pendingStockUpdate: orderedItems}, {merge:true});
+    } catch(stockErr){ console.log('Stock queue error:', stockErr.message); }
 
     // Send WhatsApp
     const items=cart.map(c=>`• ${c.name} x${c.qty}`).join('\n');
@@ -1307,15 +1292,14 @@ window.loadProfile = async function(){
   resultsEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--sub);">Buscando tus pedidos...</div>';
 
   try {
+    // Query orders - works with open rules
     var snap = await getDocs(query(collection(db,'orders'), where('phone','==',phone)));
-    // Try alternate phone format if empty
     if(snap.empty){
       var altPhone = phone.startsWith('+') ? phone.slice(1) : '+'+phone;
       snap = await getDocs(query(collection(db,'orders'), where('phone','==',altPhone)));
     }
-    // Also try without spaces
     if(snap.empty){
-      var cleanPhone = phone.replace(/\s/g,'');
+      var cleanPhone = phone.replace(/[^0-9+]/g,'');
       snap = await getDocs(query(collection(db,'orders'), where('phone','==',cleanPhone)));
     }
 
@@ -1404,13 +1388,15 @@ window.loadProfile = async function(){
 async function checkActiveOrder(phone){
   if(!phone) return false;
   try {
-    var snap = await getDocs(query(collection(db,'orders'), where('phone','==',phone)));
-    var hasActive = snap.docs.some(function(d){
-      var s=d.data().status;
-      return s==='new'||s==='confirmed'||s==='transit';
-    });
-    return hasActive;
-  } catch(e){ console.log('checkActiveOrder error:', e.message); return false; }
+    // Check via clients collection (no auth needed) - activeOrderId field
+    var clientId = phone.replace(/[^0-9]/g,'');
+    var clientSnap = await getDoc(doc(db,'clients',clientId));
+    if(clientSnap.exists()){
+      var data = clientSnap.data();
+      return data.hasActiveOrder === true;
+    }
+    return false;
+  } catch(e){ console.log('checkActiveOrder skipped:', e.message); return false; }
 }
 
 function validateBirthdate(input){

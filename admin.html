@@ -897,6 +897,33 @@ async function loadProducts(){
   const snap = await getDocs(query(collection(db,'products'), orderBy('order','asc')));
   productsCache = snap.docs.map(d=>({id:d.id,...d.data()}));
   renderStoreEditor();
+  // Process any pending stock updates from client orders
+  processPendingStockUpdates();
+}
+
+async function processPendingStockUpdates(){
+  try {
+    var clientsSnap = await getDocs(query(collection(db,'clients'), where('pendingStockUpdate','!=',null)));
+    for(var clientDoc of clientsSnap.docs){
+      var data = clientDoc.data();
+      var pending = data.pendingStockUpdate;
+      if(!pending || !pending.length) continue;
+      for(var item of pending){
+        var prod = productsCache.find(function(p){ return String(p.id)===String(item.id); });
+        if(prod){
+          var stockField = 'stock_' + (item.sede||'caracas');
+          var currentStock = prod[stockField] !== undefined ? prod[stockField] : (prod.stock||0);
+          var newStock = Math.max(0, currentStock - (item.qty||1));
+          var upd = {}; upd[stockField] = newStock;
+          await updateDoc(doc(db,'products',String(item.id)), upd);
+          prod[stockField] = newStock;
+        }
+      }
+      // Clear pending
+      await updateDoc(doc(db,'clients',clientDoc.id), { pendingStockUpdate: [] });
+    }
+    if(clientsSnap.docs.length > 0) renderStoreEditor();
+  } catch(e){ console.log('Stock process error:', e.message); }
 }
 
 /* ══ FIRESTORE: TASA ══ */
@@ -1013,11 +1040,18 @@ window.chgStatus = async function(id, newStatus){
     await updateDoc(doc(db,'orders',id), { status: newStatus, updatedAt: serverTimestamp() });
     const o = ordersCache.find(x=>x.id===id); if(!o) return;
     o.status = newStatus;
-    const sedeWa = SEDES[o.sede]?.wa || '584242708381';
+
+    // When order is done or cancelled, clear hasActiveOrder on client
+    if(newStatus==='done' || newStatus==='cancelled'){
+      try {
+        var clientId = (o.phone||'').replace(/[^0-9]/g,'');
+        if(clientId) await updateDoc(doc(db,'clients',clientId), { hasActiveOrder: false });
+      } catch(ce){ console.log('Client update error:', ce.message); }
+    }
 
     if(newStatus==='confirmed'){
-      const msg=encodeURIComponent(`Hola ${(o.client||'').split(' ')[0]} 👋🏼\n\n✅ *Su pedido ya fue confirmado.*\nCualquier duda estamos atentos.\n\n¡Gracias por elegir Mellow! 🎂`);
-      window.open(`https://wa.me/${(o.phone||'').replace(/\D/g,'')}?text=${msg}`,'_blank');
+      const msg=encodeURIComponent('Hola '+(o.client||'').split(' ')[0]+' 👋🏼\n\n✅ *Su pedido ya fue confirmado.*\nCualquier duda estamos atentos.\n\n¡Gracias por elegir Mellow! 🎂');
+      window.open('https://wa.me/'+(o.phone||'').replace(/\D/g,'')+'?text='+msg,'_blank');
       toast('✅ Pago confirmado — WhatsApp enviado', 'success');
     } else if(newStatus==='done') toast('🏁 Pedido finalizado', 'success');
     else if(newStatus==='cancelled') toast('❌ Cancelado');
