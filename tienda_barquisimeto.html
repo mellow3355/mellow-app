@@ -52,12 +52,10 @@ body{
 /* ── TOPBAR ── */
 .topbar{
   position:sticky;top:0;z-index:200;
-  background:rgba(250,247,242,.96);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
+  background:#faf7f2;
   display:flex;align-items:center;justify-content:space-between;
   padding:0 20px;height:52px;
-  border-bottom:1px solid rgba(184,147,90,.15);
+  border-bottom:1px solid rgba(184,147,90,.2);
 }
 .topbar-logo{height:32px;}
 .topbar-logo img{height:100%;width:auto;}
@@ -177,7 +175,6 @@ body{
   color:#fff;font-size:.58rem;font-weight:600;
   letter-spacing:.1em;text-transform:uppercase;
   padding:3px 8px;border-radius:100px;
-  backdrop-filter:blur(4px);
 }
 .p-qty{
   display:none;align-items:center;
@@ -229,9 +226,7 @@ body{
   display:none;position:fixed;inset:0;
   background:rgba(28,18,16,.6);
   z-index:300;
-  backdrop-filter:blur(4px);
-  -webkit-backdrop-filter:blur(4px);
-}
+  }
 .modal-overlay.active{display:flex;align-items:flex-end;justify-content:center;}
 .modal-sheet{
   background:var(--white);
@@ -299,7 +294,7 @@ body{
   display:none;position:fixed;inset:0;z-index:300;
 }
 .cart-panel.open{display:block;}
-.cart-overlay{position:absolute;inset:0;background:rgba(28,18,16,.5);backdrop-filter:blur(2px);}
+.cart-overlay{position:absolute;inset:0;background:rgba(28,18,16,.5);}
 .cart-sheet{
   position:absolute;right:0;top:0;bottom:0;
   width:100%;max-width:380px;
@@ -1253,8 +1248,7 @@ function renderProducts(){
     }
 
     var imgSrc = p.img || '';
-    html += '<img class="p-img" src="' + imgSrc + '" alt="' + p.name + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
-    html += '<div style="display:none;width:100%;aspect-ratio:1;background:var(--warm);align-items:center;justify-content:center;flex-direction:column;gap:8px;"><span style="font-size:2rem;">🎂</span><span style="font-size:.7rem;color:var(--sub);">'+p.name+'</span></div>';
+    html += '<img class="p-img" src="' + imgSrc + '" alt="' + p.name + '" loading="lazy">';
     html += '<div class="p-body">';
     html += '<div class="p-name">' + p.name + '</div>';
     html += '<div class="p-price">REF ' + (p.price || 0).toFixed(2) + '</div>';
